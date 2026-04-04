@@ -6,60 +6,75 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 type LocomotiveData struct {
-	LocoID    string `json:"locomotive_id"`
-	Series    string `json:"series"` // KZ8A или ТЭ33А
-	Timestamp string `json:"timestamp"`
-
-	// Общие параметры
-	Speed      float64 `json:"speed"`        // км/ч
-	Position   int     `json:"position"`     // Позиция контроллера (0-15 или 0-8)
-	PressureTM float64 `json:"oil_pressure"` // Давление в тормозной магистрали (кгс/см²)
-	PressureGR float64 `json:"pressure_gr"`  // Давление в главных резервуарах (кгс/см²)
-
-	// Специфика электровоза (KZ8A)
-	VoltageCS float64 `json:"voltage_cs,omitempty"` // Напряжение контактной сети (кВ)
-	Amperage  float64 `json:"amperage,omitempty"`   // Ток тяги (А)
-
-	// Специфика тепловоза (ТЭ33А)
-	FuelLevel  float64 `json:"fuel_perc"`            // Уровень топлива (л)
-	EngineTemp float64 `json:"temp"`                 // Температура воды/масла (°C)
-	EngineRPM  int     `json:"engine_rpm,omitempty"` // Обороты дизеля
-
-	Status string `json:"status"`
+	LocoID     string  `json:"locomotive_id"`
+	Series     string  `json:"series"`
+	Timestamp  string  `json:"timestamp"`
+	Speed      float64 `json:"speed"`
+	Position   int     `json:"position"`
+	PressureTM float64 `json:"oil_pressure"`
+	PressureGR float64 `json:"pressure_gr"`
+	VoltageCS  float64 `json:"voltage_cs,omitempty"`
+	Amperage   float64 `json:"amperage,omitempty"`
+	FuelLevel  float64 `json:"fuel_perc"`
+	EngineTemp float64 `json:"temp"`
+	Status     string  `json:"status"`
 }
 
 func main() {
 	url := os.Getenv("WS_URL")
 	if url == "" {
-		url = "ws://localhost/telemetry/"
+		url = "ws://telemetry-go:8080/" // Имя сервиса из docker-compose
 	}
+
+	// Список локомотивов для симуляции
+	locomotives := []struct {
+		id     string
+		series string
+	}{
+		{"KZ8A-0125", "KZ8A"},
+		{"KZ8A-0130", "KZ8A"},
+		{"TE33A-5501", "TЭ33A"},
+	}
+
+	var wg sync.WaitGroup
+	for _, l := range locomotives {
+		wg.Add(1)
+		go simulateLoco(url, l.id, l.series, &wg)
+	}
+	wg.Wait()
+}
+
+func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
+	defer wg.Done()
 
 	dialer := websocket.DefaultDialer
 	var conn *websocket.Conn
 	var err error
 
-	// Retry loop for Docker startup sequence
-	for i := 0; i < 15; i++ {
+	// Retry loop
+	for i := 0; i < 20; i++ {
 		conn, _, err = dialer.Dial(url, nil)
 		if err == nil {
 			break
 		}
-		log.Printf("Ожидание сервера %s... (%d/15)", url, i+1)
-		time.Sleep(2 * time.Second)
+		log.Printf("[%s] Подключение к %s... (%d/20)", id, url, i+1)
+		time.Sleep(3 * time.Second)
 	}
 
 	if err != nil {
-		log.Fatal("Ошибка подключения к серверу:", err)
+		log.Printf("[%s] Не удалось подключиться: %v", id, err)
+		return
 	}
 	defer conn.Close()
 
-	// Read pump to handle control messages (pings/pongs) and avoid buffer overflow
+	// Read pump to handle control messages (pings/pongs) and avoid server write timeout
 	go func() {
 		for {
 			if _, _, err := conn.ReadMessage(); err != nil {
@@ -68,48 +83,92 @@ func main() {
 		}
 	}()
 
-	fmt.Println("Симулятор КТЖ запущен. Отправка данных для KZ8A...")
+	// Состояние локомотива для плавных изменений
+	currentFuel := 85.0
+	if series == "KZ8A" {
+		currentFuel = 0 // У электровозов нет бака в литрах в данном контексте
+	}
+
+	fmt.Printf(">>> Запущен поток для %s (%s)\n", id, series)
 
 	for {
-		data := generateLocoData("KZ8A-0125")
-		payload, _ := json.Marshal(data)
+		// --- ГЕНЕРАЦИЯ EDGE CASES (АНОМАЛИЙ) ---
+		chance := rand.Float64()
+		isSilent := false
 
-		err := conn.WriteMessage(websocket.TextMessage, payload)
-		if err != nil {
-			log.Println("Ошибка отправки:", err)
-			return
+		data := generateBaseData(id, series, &currentFuel)
+
+		if chance < 0.05 { // 5% шанс на аномалию
+			anomalyType := rand.Intn(4)
+			switch anomalyType {
+			case 0:
+				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ ОБРЫВА СВЯЗИ (30с)\n", id)
+				isSilent = true
+			case 1:
+				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ СКАЧКА СКОРОСТИ\n", id)
+				data.Speed = 185.5
+				data.Status = "Critical"
+			case 2:
+				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ ПЕРЕГРЕВА\n", id)
+				data.EngineTemp = 115.0
+				data.Status = "Warning"
+			case 3:
+				if series == "TЭ33A" {
+					fmt.Printf("⚠️ [%s] ИМИТАЦИЯ СЛИВА ТОПЛИВА\n", id)
+					currentFuel -= 15.0
+					if currentFuel < 0 {
+						currentFuel = 0
+					}
+					data.FuelLevel = currentFuel
+					data.Status = "Critical"
+				}
+			}
 		}
 
-		fmt.Printf("[%s] Скорость: %.1f км/ч | Напряжение: %.1f кВ | Статус: %s\n",
-			data.LocoID, data.Speed, data.VoltageCS, data.Status)
+		if !isSilent {
+			payload, _ := json.Marshal(data)
+			if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+				log.Printf("[%s] Ошибка: %v", id, err)
+				return
+			}
+		} else {
+			// Если имитируем "Выкл", просто ждем и ничего не шлем
+			time.Sleep(30 * time.Second)
+		}
 
-		time.Sleep(1 * time.Second) // Имитация частоты опроса датчиков 1 Гц
+		time.Sleep(1 * time.Second)
 	}
 }
 
-func generateLocoData(id string) LocomotiveData {
-	// Имитация случайных изменений
-	speed := 60.0 + rand.Float64()*20.0
-	voltage := 25.0 + (rand.Float64()*2.0 - 1.0) // Колебания вокруг 25кВ
-	status := "Normal"
+func generateBaseData(id, series string, fuel *float64) LocomotiveData {
+	speed := 40.0 + rand.Float64()*40.0
+	temp := 70.0 + rand.Float64()*15.0
 
-	// Пример логики критического значения
-	if speed > 115 {
-		status = "Warning"
+	// Медленный расход топлива
+	if series == "TЭ33A" {
+		*fuel -= 0.001
+		if *fuel < 0 {
+			*fuel = 0
+		}
 	}
 
-	return LocomotiveData{
+	data := LocomotiveData{
 		LocoID:     id,
-		Series:     "KZ8A",
+		Series:     series,
 		Timestamp:  time.Now().Format(time.RFC3339),
 		Speed:      speed,
-		Position:   8,
-		PressureTM: 5.2 + rand.Float64()*0.4,
-		PressureGR: 9.1,
-		VoltageCS:  voltage,
-		Amperage:   1200 + rand.Float64()*500,
-		FuelLevel:  85.0 - (rand.Float64() * 0.1), // Slow fuel consumption
-		EngineTemp: 75.0 + rand.Float64()*10.0,
-		Status:     status,
+		Position:   rand.Intn(9),
+		PressureTM: 5.2 + (rand.Float64() * 0.2),
+		PressureGR: 9.0 + (rand.Float64() * 0.5),
+		EngineTemp: temp,
+		FuelLevel:  *fuel,
+		Status:     "Normal",
 	}
+
+	if series == "KZ8A" {
+		data.VoltageCS = 25.0 + (rand.Float64()*2.0 - 1.0)
+		data.Amperage = 800 + rand.Float64()*600
+	}
+
+	return data
 }

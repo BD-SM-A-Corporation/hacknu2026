@@ -104,6 +104,30 @@ services:
     networks:
       - app-network
 
+  telemetry-worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=laravel
+      - DB_USERNAME=sail
+      - DB_PASSWORD=password
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+    command: php artisan telemetry:listen-redis
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge

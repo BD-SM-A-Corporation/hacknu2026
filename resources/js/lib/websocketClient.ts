@@ -38,9 +38,20 @@ export class WebSocketClient {
                 try {
                     const data = JSON.parse(event.data);
 
-                    // Expected format: { type: 'telemetry', data: { locomotiveId, speed, temperature, pressure, fuelLevel } }
-                    if (data.type === 'telemetry' && data.data) {
-                        updateTelemetry(data.data);
+                    const payload =
+                        data.type === 'telemetry' ? data.data : data;
+
+                    if (payload && payload.locomotiveId) {
+                        updateTelemetry(payload);
+
+                        // Fire global ping so the front-end components can discover new trains
+                        if (typeof window !== 'undefined') {
+                            window.dispatchEvent(
+                                new CustomEvent('locomotivePing', {
+                                    detail: payload,
+                                }),
+                            );
+                        }
                     }
                 } catch (e) {
                     console.error('Failed to parse WebSocket message', e);

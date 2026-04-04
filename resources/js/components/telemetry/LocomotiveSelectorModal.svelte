@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { index } from '@/actions/App/Http/Controllers/Api/LocomotiveController';
     import { activeLocomotiveId } from '@/lib/telemetry';
     import {
@@ -11,6 +11,33 @@
     let searchQuery = '';
     let allLocomotives: { id: string, model: string, depot: string, status?: string }[] = [];
     let isLoading = true;
+
+    function handleLocomotivePing(e: Event) {
+        const customEvent = e as CustomEvent<any>;
+        const data = customEvent.detail;
+        const id = data.locomotiveId;
+
+        let newStatus = 'active';
+
+        // Check anomaly, critical triggers. Exclude KZ8A purely from fuel check since electric locos report 0 fuel
+        if (data.is_anomaly || data.temperature > 100 || data.pressure < 4.5 || (!data.locomotiveId.includes('KZ8A') && data.fuelLevel < 10)) {
+            newStatus = 'warning';
+        } else if (data.speed < 1) {
+            newStatus = 'stopped';
+        }
+
+        const index = allLocomotives.findIndex(l => l.id === id);
+
+        if (index === -1) {
+            // Automatically push new locomotives to the visual list
+            allLocomotives = [...allLocomotives, { id, model: 'Авто-обнаружение', depot: 'Сеть', status: newStatus }];
+        } else {
+            if (allLocomotives[index].status !== newStatus) {
+                allLocomotives[index].status = newStatus;
+                allLocomotives = [...allLocomotives];
+            }
+        }
+    }
 
     onMount(async () => {
         try {
@@ -30,6 +57,16 @@
             console.error('Failed to load locomotives:', e);
         } finally {
             isLoading = false;
+        }
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('locomotivePing', handleLocomotivePing);
+        }
+    });
+
+    onDestroy(() => {
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('locomotivePing', handleLocomotivePing);
         }
     });
 
@@ -63,7 +100,7 @@
         {#if isLoading}
             <div class="text-center py-8 opacity-50">Загрузка локомотивов...</div>
         {:else}
-            {#each filteredLocomotives as loco}
+            {#each filteredLocomotives as loco (loco.id)}
             <button
                 class={`w-full text-left p-3 rounded-xl border transition-all ${
                     $activeLocomotiveId === loco.id
@@ -75,10 +112,15 @@
                 <div class="flex justify-between items-center mb-1">
                     <span class="font-bold text-lg">{loco.id}</span>
                     <span class={`text-xs px-2 py-1 rounded-full ${
-                        loco.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                        loco.status === 'active' || loco.status === 'Active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                        loco.status === 'warning' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                        loco.status === 'stopped' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
                         'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
                     }`}>
-                        {loco.status === 'active' ? 'В пути' : 'В депо'}
+                        {loco.status === 'active' || loco.status === 'Active' ? 'В пути' :
+                         loco.status === 'warning' ? 'Внимание / Аномалия' :
+                         loco.status === 'stopped' ? 'Остановка' :
+                         loco.status === 'Offline' ? 'Не в сети' : 'В депо'}
                     </span>
                 </div>
                 <div class="flex justify-between text-sm opacity-70">

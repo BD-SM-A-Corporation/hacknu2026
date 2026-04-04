@@ -15,11 +15,12 @@ class RedisSubscribeTelemetry extends Command
 
     public function handle()
     {
+        ini_set('default_socket_timeout', -1);
         $this->info("Listening to Redis channel 'locomotive-updates'...");
 
         Redis::subscribe(['locomotive-updates'], function ($message) {
             $data = json_decode($message, true);
-            if (! $data) {
+            if (!$data) {
                 return;
             }
 
@@ -28,9 +29,15 @@ class RedisSubscribeTelemetry extends Command
             $pressure = $data['pressure'] ?? 0;
             $locoId = $data['locomotiveId'] ?? null;
 
-            if (! $locoId) {
+            if (!$locoId) {
                 return;
             }
+
+            // Auto-register missing locomotives
+            \App\Models\Locomotive::firstOrCreate(
+                ['id' => $locoId],
+                ['model' => 'Авто-обнаружение', 'status' => 'Active']
+            );
 
             $alertType = null;
             $alertMsg = null;

@@ -16,5 +16,6 @@ class Locomotive extends Model
         'id',
         'model',
         'depot',
+        'status',
     ];
 }
