@@ -12,6 +12,8 @@
     }
 </script>
 
+<svelte:window on:keydown={(e) => { if (e.key === 'Escape' && isOpen) close(); }} />
+
 {#if isOpen}
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-static-element-interactions -->
