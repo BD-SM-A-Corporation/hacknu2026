@@ -6,7 +6,6 @@
     import Menu from 'lucide-svelte/icons/menu';
     import Settings from 'lucide-svelte/icons/settings';
     import Activity from 'lucide-svelte/icons/activity';
-    import AppLogoIcon from '@/components/AppLogoIcon.svelte';
     import {
         Avatar,
         AvatarFallback,
@@ -49,7 +48,7 @@
     const url = currentUrlState();
 
     const activeItemStyles =
-        'text-emerald-600 dark:text-emerald-400';
+        'text-[#00AAD9] dark:text-[#00AAD9]';
 </script>
 
 <header class="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/80">
@@ -75,8 +74,10 @@
                     <SheetContent side="left" class="w-[300px] p-6">
                         <SheetTitle class="sr-only">Навигация</SheetTitle>
                         <SheetHeader class="flex justify-start text-left">
-                            <AppLogoIcon
-                                class="size-6 fill-current text-black dark:text-white"
+                            <img
+                                src="/KTZH-32x32.svg"
+                                alt="КТЖ"
+                                class="size-7 shrink-0"
                             />
                         </SheetHeader>
                         <div class="flex h-full flex-1 flex-col space-y-6 pt-6 pb-10">
@@ -137,13 +138,16 @@
                 href={toUrl(dashboard())}
                 class="flex items-center gap-2 transition-opacity hover:opacity-80"
             >
-                <div
-                    class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm"
-                >
-                    <AppLogoIcon class="size-4 fill-current text-white" />
-                </div>
+                <img
+                    src="/KTZH-32x32.svg"
+                    alt="КТЖ"
+                    class="size-8 shrink-0"
+                />
+                <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:inline lg:hidden">
+                    КТЖ
+                </span>
                 <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline">
-                    RailTelemetry
+                    КТЖ Монитор
                 </span>
             </Link>
 
@@ -155,7 +159,7 @@
                 href={toUrl(dashboard())}
                 class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors lg:flex
                     {url.isCurrentUrl(dashboard(), url.currentUrl)
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                    ? 'bg-[#00AAD9]/10 text-[#00AAD9] dark:bg-[#00AAD9]/20 dark:text-[#00AAD9]'
                     : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'}"
             >
                 <LayoutGrid class="h-4 w-4" />
@@ -170,7 +174,7 @@
                 href="/analytics"
                 class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors lg:flex
                     {url.currentUrl.startsWith('/analytics')
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                    ? 'bg-[#00AAD9]/10 text-[#00AAD9] dark:bg-[#00AAD9]/20 dark:text-[#00AAD9]'
                     : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'}"
             >
                 <Activity class="h-4 w-4" />
@@ -269,7 +273,7 @@
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="relative size-9 w-auto rounded-full p-0.5 transition-all hover:ring-2 hover:ring-emerald-500/30"
+                            class="relative size-9 w-auto rounded-full p-0.5 transition-all hover:ring-2 hover:ring-[#00AAD9]/30"
                             onclick={props.onclick}
                             aria-expanded={props['aria-expanded']}
                             data-state={props['data-state']}
@@ -284,7 +288,7 @@
                                     />
                                 {/if}
                                 <AvatarFallback
-                                    class="rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-xs font-bold text-white"
+                                    class="rounded-full bg-[#00AAD9] text-xs font-bold text-white"
                                 >
                                     {getInitials(auth.user?.name ?? '')}
                                 </AvatarFallback>
