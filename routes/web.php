@@ -9,6 +9,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard', [
         'canRegister' => Features::enabled(Features::registration()),
     ])->name('dashboard');
+
+    Route::inertia('analytics', 'Analytics')->name('analytics');
 });
 
-require __DIR__ . '/settings.php';
+require __DIR__.'/settings.php';
