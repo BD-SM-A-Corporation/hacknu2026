@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"telemetry-service/internal/broker"
 	"telemetry-service/internal/processor"
 	"telemetry-service/internal/storage"
@@ -19,11 +20,18 @@ func main() {
 	go hub.Run()
 
 	// Create Redis Broker (connecting to local redis server on 6379 by default)
-	rdb := broker.NewRedisBroker("localhost:6379", "", 0)
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+	rdb := broker.NewRedisBroker(redisAddr, "", 0)
 
 	// Create PostgreSQL Storage Component
 	// DSN format (change for production)
-	dsn := "host=localhost user=postgres password=postgres dbname=telemetry port=5432 sslmode=disable"
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=postgres dbname=telemetry port=5432 sslmode=disable"
+	}
 	dbStorage := storage.NewPostgresStorage(dsn)
 
 	// Create Data Processor Pool
@@ -59,7 +67,7 @@ func main() {
 	}()
 
 	// 3. HTTP Endpoints Setup
-	http.HandleFunc("/telemetry", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		websocket.ServeWs(hub, w, r)
 	})
 

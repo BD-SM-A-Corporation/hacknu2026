@@ -6,14 +6,20 @@
     import { wsClient } from '@/lib/websocketClient';
     import ModalContainer from './ModalContainer.svelte';
 
-    let endpointUrl = 'ws://localhost:8080/telemetry';
+    let endpointUrl = 'ws://localhost/telemetry/';
     let savedEndpoints: { id: number, url: string, is_active: boolean }[] = [];
     let isConnected = false;
     let importError = '';
 
     onMount(async () => {
         try {
-            const res = await fetch(index.url());
+            const res = await fetch(index.url(), {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
 
             if (res.ok) {
                 const data = await res.json();
@@ -32,14 +38,32 @@
         wsClient.setUrl(endpointUrl);
 
         // Also save to backend
+        function getCookie(name: string) {
+            const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+
+            return match ? decodeURIComponent(match[3]) : null;
+        }
+
         try {
             await fetch(storeEndpoint.url(), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || ''
+                },
                 body: JSON.stringify({ url: endpointUrl, is_active: true })
             });
             // Update list silently
-            const res = await fetch(index.url());
+            const res = await fetch(index.url(), {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
 
             if (res.ok) {
                 const data = await res.json();

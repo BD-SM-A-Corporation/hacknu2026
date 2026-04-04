@@ -93,4 +93,4 @@ export class WebSocketClient {
 }
 
 // Export a singleton instance with a default/fallback endpoint for now
-export const wsClient = new WebSocketClient('ws://localhost:8080/telemetry');
+export const wsClient = new WebSocketClient('ws://localhost/telemetry/');

@@ -14,7 +14,13 @@
 
     onMount(async () => {
         try {
-            const response = await fetch(index.url());
+            const response = await fetch(index.url(), {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
 
             if (response.ok) {
                 const res = await response.json();

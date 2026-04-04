@@ -12,24 +12,24 @@ import (
 )
 
 type LocomotiveData struct {
-	LocoID    string `json:"loco_id"`
+	LocoID    string `json:"locomotive_id"`
 	Series    string `json:"series"` // KZ8A или ТЭ33А
 	Timestamp string `json:"timestamp"`
 
 	// Общие параметры
-	Speed      float64 `json:"speed"`       // км/ч
-	Position   int     `json:"position"`    // Позиция контроллера (0-15 или 0-8)
-	PressureTM float64 `json:"pressure_tm"` // Давление в тормозной магистрали (кгс/см²)
-	PressureGR float64 `json:"pressure_gr"` // Давление в главных резервуарах (кгс/см²)
+	Speed      float64 `json:"speed"`        // км/ч
+	Position   int     `json:"position"`     // Позиция контроллера (0-15 или 0-8)
+	PressureTM float64 `json:"oil_pressure"` // Давление в тормозной магистрали (кгс/см²)
+	PressureGR float64 `json:"pressure_gr"`  // Давление в главных резервуарах (кгс/см²)
 
 	// Специфика электровоза (KZ8A)
 	VoltageCS float64 `json:"voltage_cs,omitempty"` // Напряжение контактной сети (кВ)
 	Amperage  float64 `json:"amperage,omitempty"`   // Ток тяги (А)
 
 	// Специфика тепловоза (ТЭ33А)
-	FuelLevel  float64 `json:"fuel_level,omitempty"`  // Уровень топлива (л)
-	EngineTemp float64 `json:"engine_temp,omitempty"` // Температура воды/масла (°C)
-	EngineRPM  int     `json:"engine_rpm,omitempty"`  // Обороты дизеля
+	FuelLevel  float64 `json:"fuel_perc"`            // Уровень топлива (л)
+	EngineTemp float64 `json:"temp"`                 // Температура воды/масла (°C)
+	EngineRPM  int     `json:"engine_rpm,omitempty"` // Обороты дизеля
 
 	Status string `json:"status"`
 }
@@ -37,7 +37,7 @@ type LocomotiveData struct {
 func main() {
 	url := os.Getenv("WS_URL")
 	if url == "" {
-		url = "ws://localhost:8000/telemetry/"
+		url = "ws://localhost/telemetry/"
 	}
 
 	dialer := websocket.DefaultDialer
@@ -58,6 +58,15 @@ func main() {
 		log.Fatal("Ошибка подключения к серверу:", err)
 	}
 	defer conn.Close()
+
+	// Read pump to handle control messages (pings/pongs) and avoid buffer overflow
+	go func() {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}()
 
 	fmt.Println("Симулятор КТЖ запущен. Отправка данных для KZ8A...")
 
@@ -95,10 +104,12 @@ func generateLocoData(id string) LocomotiveData {
 		Timestamp:  time.Now().Format(time.RFC3339),
 		Speed:      speed,
 		Position:   8,
-		PressureTM: 5.2,
+		PressureTM: 5.2 + rand.Float64()*0.4,
 		PressureGR: 9.1,
 		VoltageCS:  voltage,
 		Amperage:   1200 + rand.Float64()*500,
+		FuelLevel:  85.0 - (rand.Float64() * 0.1), // Slow fuel consumption
+		EngineTemp: 75.0 + rand.Float64()*10.0,
 		Status:     status,
 	}
 }
