@@ -20,6 +20,7 @@
     let showPressure = $state(true);
     let showFuel = $state(true);
     let hasData = $state(false);
+    let currentData = $state<any[]>([]);
     
     let stepSelection = $state("auto");
 
@@ -57,6 +58,7 @@
             if (res.ok) {
                 const data = await res.json();
                 hasData = data.length > 0;
+                currentData = data;
                 // Add a small delay for DOM to render the canvas if it was hidden
                 setTimeout(() => {
                     renderChart(data);
@@ -75,6 +77,28 @@
         link.download = `analytics_KZ8A_${$activeLocomotiveId}.png`;
         link.href = chart.toBase64Image();
         link.click();
+    }
+
+    function downloadCSV() {
+        if (!currentData.length) return;
+        
+        let csvContent = "Дата и Время;Скорость (км/ч);Температура (°C);Давление;Уровень топлива\n";
+        currentData.forEach(item => {
+            const dt = new Date(item.timestamp).toLocaleString('ru-RU');
+            const speed = Number(item.speed).toFixed(2);
+            const temp = Number(item.temperature).toFixed(2);
+            const press = Number(item.pressure).toFixed(2);
+            const fuel = Number(item.fuel_level).toFixed(2);
+            csvContent += `"${dt}";${speed};${temp};${press};${fuel}\n`;
+        });
+        
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `analytics_KZ8A_${$activeLocomotiveId}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     function renderChart(data: any[]) {
@@ -220,6 +244,14 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
+                    <button 
+                        onclick={downloadCSV} 
+                        class="px-3 py-1.5 flex items-center gap-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 text-sm rounded shadow-sm transition"
+                        title="Скачать данные как CSV (Excel)"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+                        CSV
+                    </button>
                     <button 
                         onclick={downloadChart} 
                         class="px-3 py-1.5 flex items-center gap-1 bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600 hover:text-white dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-600 dark:hover:text-white text-sm rounded shadow-sm transition"
