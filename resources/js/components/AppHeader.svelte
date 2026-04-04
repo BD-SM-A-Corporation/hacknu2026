@@ -6,7 +6,6 @@
     import Menu from 'lucide-svelte/icons/menu';
     import Settings from 'lucide-svelte/icons/settings';
     import Activity from 'lucide-svelte/icons/activity';
-    import AppLogoIcon from '@/components/AppLogoIcon.svelte';
     import {
         Avatar,
         AvatarFallback,
@@ -48,7 +47,12 @@
     const auth = $derived(page.props.auth);
     const url = currentUrlState();
 
+<<<<<<< HEAD
+    const activeItemStyles =
+        'text-[#00AAD9] dark:text-[#00AAD9]';
+=======
     const activeItemStyles = 'text-emerald-600 dark:text-emerald-400';
+>>>>>>> 70b3de1d2215d37c83efb3a6de03ccef26c7b035
 </script>
 
 <header
@@ -76,8 +80,10 @@
                     <SheetContent side="left" class="w-[300px] p-6">
                         <SheetTitle class="sr-only">Навигация</SheetTitle>
                         <SheetHeader class="flex justify-start text-left">
-                            <AppLogoIcon
-                                class="size-6 fill-current text-black dark:text-white"
+                            <img
+                                src="/KTZH-32x32.svg"
+                                alt="КТЖ"
+                                class="size-7 shrink-0"
                             />
                         </SheetHeader>
                         <div
@@ -146,6 +152,18 @@
                 href={toUrl(dashboard())}
                 class="flex items-center gap-2 transition-opacity hover:opacity-80"
             >
+<<<<<<< HEAD
+                <img
+                    src="/KTZH-32x32.svg"
+                    alt="КТЖ"
+                    class="size-8 shrink-0"
+                />
+                <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:inline lg:hidden">
+                    КТЖ
+                </span>
+                <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline">
+                    КТЖ Монитор
+=======
                 <div
                     class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm"
                 >
@@ -155,6 +173,7 @@
                     class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline"
                 >
                     RailTelemetry
+>>>>>>> 70b3de1d2215d37c83efb3a6de03ccef26c7b035
                 </span>
             </Link>
 
@@ -168,7 +187,7 @@
                 href={toUrl(dashboard())}
                 class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors lg:flex
                     {url.isCurrentUrl(dashboard(), url.currentUrl)
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                    ? 'bg-[#00AAD9]/10 text-[#00AAD9] dark:bg-[#00AAD9]/20 dark:text-[#00AAD9]'
                     : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'}"
             >
                 <LayoutGrid class="h-4 w-4" />
@@ -185,7 +204,7 @@
                 href="/analytics"
                 class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors lg:flex
                     {url.currentUrl.startsWith('/analytics')
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                    ? 'bg-[#00AAD9]/10 text-[#00AAD9] dark:bg-[#00AAD9]/20 dark:text-[#00AAD9]'
                     : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'}"
             >
                 <Activity class="h-4 w-4" />
@@ -284,7 +303,7 @@
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="relative size-9 w-auto rounded-full p-0.5 transition-all hover:ring-2 hover:ring-emerald-500/30"
+                            class="relative size-9 w-auto rounded-full p-0.5 transition-all hover:ring-2 hover:ring-[#00AAD9]/30"
                             onclick={props.onclick}
                             aria-expanded={props['aria-expanded']}
                             data-state={props['data-state']}
@@ -299,7 +318,7 @@
                                     />
                                 {/if}
                                 <AvatarFallback
-                                    class="rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-xs font-bold text-white"
+                                    class="rounded-full bg-[#00AAD9] text-xs font-bold text-white"
                                 >
                                     {getInitials(auth.user?.name ?? '')}
                                 </AvatarFallback>
