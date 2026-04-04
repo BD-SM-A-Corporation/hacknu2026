@@ -38,30 +38,30 @@
                         data: speedData,
                         borderColor: '#059669', // Emerald 600
                         tension: 0.4,
-                        hidden: !showSpeed
+                        hidden: !showSpeed,
                     },
                     {
                         label: 'Температура (°C)',
                         data: temperatureData,
                         borderColor: '#dc2626', // Red 600
                         tension: 0.4,
-                        hidden: !showTemperature
+                        hidden: !showTemperature,
                     },
                     {
                         label: 'Давление (атм)',
                         data: pressureData,
                         borderColor: '#2563eb', // Blue 600
                         tension: 0.4,
-                        hidden: !showPressure
+                        hidden: !showPressure,
                     },
                     {
                         label: 'Топливо (%)',
                         data: fuelData,
                         borderColor: '#d97706', // Amber 600
                         tension: 0.4,
-                        hidden: !showFuel
-                    }
-                ]
+                        hidden: !showFuel,
+                    },
+                ],
             },
             options: {
                 responsive: true,
@@ -76,15 +76,15 @@
                         display: true,
                     },
                     y: {
-                        beginAtZero: true
-                    }
+                        beginAtZero: true,
+                    },
                 },
                 plugins: {
                     legend: {
-                        display: false // We use our own toggles
-                    }
-                }
-            }
+                        display: false, // We use our own toggles
+                    },
+                },
+            },
         });
 
         const id = get(activeLocomotiveId);
@@ -109,7 +109,7 @@
                     chart.data.datasets[3].data = fuelData;
                     chart.update();
                 } catch (e) {
-                    console.error("Failed to parse cached chart data", e);
+                    console.error('Failed to parse cached chart data', e);
                 }
             }
 
@@ -128,7 +128,9 @@
                         const newFuel: any[] = [];
 
                         sortedHistory.forEach((record: any) => {
-                            const time = new Date(record.timestamp).toLocaleTimeString();
+                            const time = new Date(
+                                record.timestamp,
+                            ).toLocaleTimeString();
                             newLabels.push(time);
                             newSpeed.push(record.speed);
                             newTemp.push(record.temperature);
@@ -150,13 +152,20 @@
                         chart.update();
 
                         // Update cache
-                        localStorage.setItem(`telemetry_chart_${id}`, JSON.stringify({
-                            labels, speedData, temperatureData, pressureData, fuelData
-                        }));
+                        localStorage.setItem(
+                            `telemetry_chart_${id}`,
+                            JSON.stringify({
+                                labels,
+                                speedData,
+                                temperatureData,
+                                pressureData,
+                                fuelData,
+                            }),
+                        );
                     }
                 }
             } catch (err) {
-                console.error("Failed to fetch historical stats", err);
+                console.error('Failed to fetch historical stats', err);
             }
         }
 
@@ -190,9 +199,16 @@
                 chart.update();
                 // Save to localStorage on every update
                 if (id) {
-                    localStorage.setItem(`telemetry_chart_${id}`, JSON.stringify({
-                        labels, speedData, temperatureData, pressureData, fuelData
-                    }));
+                    localStorage.setItem(
+                        `telemetry_chart_${id}`,
+                        JSON.stringify({
+                            labels,
+                            speedData,
+                            temperatureData,
+                            pressureData,
+                            fuelData,
+                        }),
+                    );
                 }
             }
         });
@@ -220,25 +236,68 @@
     });
 </script>
 
-<div class="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm min-h-[300px] h-[400px]">
+<div
+    class="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm min-h-[300px] h-[400px]"
+>
     <!-- Custom Controls over the chart -->
-    <div class="absolute top-4 right-4 z-10 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm flex flex-col gap-2 text-sm">
-        <span class="font-medium text-xs text-zinc-500 uppercase tracking-wider mb-1">Отображение</span>
-        <label class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80">
-            <input type="checkbox" bind:checked={showSpeed} class="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:bg-zinc-900" />
-            <span class="text-zinc-700 dark:text-zinc-300">Скорость</span>
+    <div
+        class="absolute top-4 right-4 z-10 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm flex flex-col gap-1.5 text-sm min-w-[140px]"
+    >
+        <span
+            class="font-medium text-xs text-zinc-500 uppercase tracking-wider mb-1 px-1"
+            >Отображение</span
+        >
+
+        <label
+            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showSpeed
+                ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+        >
+            <input
+                type="checkbox"
+                bind:checked={showSpeed}
+                class="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:bg-zinc-800 dark:border-zinc-600"
+            />
+            <span class="font-medium">Скорость</span>
         </label>
-        <label class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80">
-            <input type="checkbox" bind:checked={showTemperature} class="rounded border-zinc-300 text-red-600 focus:ring-red-500 dark:bg-zinc-900" />
-            <span class="text-zinc-700 dark:text-zinc-300">Температура</span>
+
+        <label
+            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showTemperature
+                ? 'bg-red-500/15 text-red-700 dark:bg-red-500/25 dark:text-red-300'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+        >
+            <input
+                type="checkbox"
+                bind:checked={showTemperature}
+                class="rounded border-zinc-300 text-red-600 focus:ring-red-500 dark:bg-zinc-800 dark:border-zinc-600"
+            />
+            <span class="font-medium">Температура</span>
         </label>
-        <label class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80">
-            <input type="checkbox" bind:checked={showPressure} class="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:bg-zinc-900" />
-            <span class="text-zinc-700 dark:text-zinc-300">Давление</span>
+
+        <label
+            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showPressure
+                ? 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/25 dark:text-blue-300'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+        >
+            <input
+                type="checkbox"
+                bind:checked={showPressure}
+                class="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-600"
+            />
+            <span class="font-medium">Давление</span>
         </label>
-        <label class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80">
-            <input type="checkbox" bind:checked={showFuel} class="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:bg-zinc-900" />
-            <span class="text-zinc-700 dark:text-zinc-300">Топливо</span>
+
+        <label
+            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showFuel
+                ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+        >
+            <input
+                type="checkbox"
+                bind:checked={showFuel}
+                class="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:bg-zinc-800 dark:border-zinc-600"
+            />
+            <span class="font-medium">Топливо</span>
         </label>
     </div>
 
