@@ -24,6 +24,8 @@ type LocomotiveData struct {
 	Amperage   float64 `json:"amperage,omitempty"`
 	FuelLevel  float64 `json:"fuel_perc"`
 	EngineTemp float64 `json:"temp"`
+	Lat        float64 `json:"lat"`
+	Lng        float64 `json:"lng"`
 	Status     string  `json:"status"`
 }
 
@@ -89,6 +91,17 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 		currentFuel = 0 // У электровозов нет бака в литрах в данном контексте
 	}
 
+	// Astana coordinates
+	lat := 51.169392
+	lng := 71.449074
+	if id == "KZ8A-0130" {
+		lat = 43.222015 // Almaty
+		lng = 76.851248
+	} else if id == "KZ8A-0125" {
+		lat = 49.801867 // Karaganda
+		lng = 73.102143
+	}
+
 	fmt.Printf(">>> Запущен поток для %s (%s)\n", id, series)
 
 	for {
@@ -96,10 +109,10 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 		chance := rand.Float64()
 		isSilent := false
 
-		data := generateBaseData(id, series, &currentFuel)
+		data := generateBaseData(id, series, &currentFuel, &lat, &lng)
 
 		if chance < 0.05 { // 5% шанс на аномалию
-			anomalyType := rand.Intn(4)
+			anomalyType := rand.Intn(5)
 			switch anomalyType {
 			case 0:
 				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ ОБРЫВА СВЯЗИ (30с)\n", id)
@@ -122,6 +135,11 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 					data.FuelLevel = currentFuel
 					data.Status = "Critical"
 				}
+			case 4:
+				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ ПРЫЖКА КООРДИНАТ (GPS СБОЙ)\n", id)
+				lat += 1.0 // jump ~111km
+				data.Lat = lat
+				data.Status = "Critical"
 			}
 		}
 
@@ -140,7 +158,7 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 	}
 }
 
-func generateBaseData(id, series string, fuel *float64) LocomotiveData {
+func generateBaseData(id, series string, fuel *float64, lat *float64, lng *float64) LocomotiveData {
 	speed := 40.0 + rand.Float64()*40.0
 	temp := 70.0 + rand.Float64()*15.0
 
@@ -150,6 +168,14 @@ func generateBaseData(id, series string, fuel *float64) LocomotiveData {
 		if *fuel < 0 {
 			*fuel = 0
 		}
+	}
+
+	// Физическое движение координат
+	importMath := true
+	if importMath {
+		distanceKm := speed / 3600.0 // за 1 секунду
+		*lat += (distanceKm / 111.0)
+		*lng += (distanceKm / 111.0) // simplified to constant factor for brevity
 	}
 
 	data := LocomotiveData{
@@ -162,6 +188,8 @@ func generateBaseData(id, series string, fuel *float64) LocomotiveData {
 		PressureGR: 9.0 + (rand.Float64() * 0.5),
 		EngineTemp: temp,
 		FuelLevel:  *fuel,
+		Lat:        *lat,
+		Lng:        *lng,
 		Status:     "Normal",
 	}
 

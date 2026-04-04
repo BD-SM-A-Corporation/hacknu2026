@@ -28,16 +28,28 @@ class RedisSubscribeTelemetry extends Command
             $temp = $data['temperature'] ?? 0;
             $pressure = $data['pressure'] ?? 0;
             $locoId = $data['locomotiveId'] ?? null;
+            $lat = $data['lat'] ?? null;
+            $lng = $data['lng'] ?? null;
+            $speed = $data['speed'] ?? null;
+            $gpsCorrupted = $data['gps_corrupted'] ?? false;
 
             if (!$locoId) {
                 return;
             }
 
             // Auto-register missing locomotives
-            \App\Models\Locomotive::firstOrCreate(
+            $loco = \App\Models\Locomotive::firstOrCreate(
                 ['id' => $locoId],
                 ['model' => 'Авто-обнаружение', 'status' => 'Active']
             );
+
+            if (!$gpsCorrupted && $lat !== null && $lng !== null) {
+                $loco->update([
+                    'lat' => $lat,
+                    'lng' => $lng,
+                    'speed' => $speed,
+                ]);
+            }
 
             $alertType = null;
             $alertMsg = null;
