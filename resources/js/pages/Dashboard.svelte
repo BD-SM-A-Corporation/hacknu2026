@@ -4,7 +4,7 @@
     export const layout = {
         breadcrumbs: [
             {
-                title: 'Центр управления',
+                title: 'Дэшборд',
                 href: dashboard(),
             },
         ],
@@ -31,8 +31,8 @@
     import {
         openLocomotiveSelector,
         openWebSocketConfig,
-        openUserSettings,
     } from '@/lib/uiStore';
+    import { isRealtime, formattedRange } from '@/lib/dateRangeStore';
     import { wsClient } from '@/lib/websocketClient';
 
     onMount(() => {
@@ -42,7 +42,7 @@
 
 <AppHead title="Dashboard - Телеметрия" />
 
-<!-- Control Action Bar -->
+<!-- Locomotive Status Bar -->
 <div
     class="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm mb-6"
 >
@@ -56,6 +56,25 @@
                     >
                 {:else}
                     <span class="opacity-50">Не выбран</span>
+                {/if}
+            </div>
+        </div>
+        <div class="hidden sm:block w-px h-10 bg-zinc-200 dark:bg-zinc-700 mx-2"></div>
+        <div>
+            <span class="text-sm opacity-60">Режим:</span>
+            <div class="text-md font-medium mt-0.5">
+                {#if $isRealtime}
+                    <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        В реальном времени
+                    </span>
+                {:else}
+                    <span class="text-zinc-700 dark:text-zinc-300">
+                        Исторические данные: {$formattedRange}
+                    </span>
                 {/if}
             </div>
         </div>
@@ -73,26 +92,6 @@
             class="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors border border-zinc-200 dark:border-zinc-700"
         >
             Настройки WS
-        </button>
-        <button
-            on:click={openUserSettings}
-            aria-label="Настройки пользователя"
-            class="p-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-700"
-        >
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><circle cx="12" cy="12" r="3"></circle><path
-                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
-                ></path></svg
-            >
         </button>
     </div>
 </div>
