@@ -32,17 +32,16 @@ type LocomotiveData struct {
 func main() {
 	url := os.Getenv("WS_URL")
 	if url == "" {
-		url = "ws://telemetry-go:8080/" // Имя сервиса из docker-compose
+		url = "ws://telemetry-go:8080/"
 	}
 
-	// Список локомотивов для симуляции
 	locomotives := []struct {
 		id     string
 		series string
 	}{
 		{"KZ8A-0125", "KZ8A"},
 		{"KZ8A-0130", "KZ8A"},
-		{"TE33A-5501", "TЭ33A"},
+		{"TE33A-5501", "TE33A"},
 	}
 
 	var wg sync.WaitGroup
@@ -60,75 +59,62 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 	var conn *websocket.Conn
 	var err error
 
-	// Retry loop
 	for i := 0; i < 20; i++ {
 		conn, _, err = dialer.Dial(url, nil)
 		if err == nil {
 			break
 		}
-		log.Printf("[%s] Подключение к %s... (%d/20)", id, url, i+1)
+		log.Printf("[%s] Подключение... (%d/20)", id, i+1)
 		time.Sleep(3 * time.Second)
 	}
 
 	if err != nil {
-		log.Printf("[%s] Не удалось подключиться: %v", id, err)
+		log.Printf("[%s] Ошибка: %v", id, err)
 		return
 	}
 	defer conn.Close()
 
-	// Read pump to handle control messages (pings/pongs) and avoid server write timeout
-	go func() {
-		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
-				return
-			}
-		}
-	}()
-
-	// Состояние локомотива для плавных изменений
+	// Состояние
 	currentFuel := 85.0
 	if series == "KZ8A" {
-		currentFuel = 0 // У электровозов нет бака в литрах в данном контексте
+		currentFuel = 0
 	}
 
-	// Astana coordinates
-	lat := 51.169392
-	lng := 71.449074
+	lat, lng := 51.1693, 71.4490 // Astana
 	if id == "KZ8A-0130" {
-		lat = 43.222015 // Almaty
-		lng = 76.851248
+		lat, lng = 43.2220, 76.8512 // Almaty
 	} else if id == "KZ8A-0125" {
-		lat = 49.801867 // Karaganda
-		lng = 73.102143
+		lat, lng = 49.8018, 73.1021 // Karaganda
 	}
 
-	fmt.Printf(">>> Запущен поток для %s (%s)\n", id, series)
+	fmt.Printf(">>> Запущен %s (%s)\n", id, series)
 
 	for {
-		// --- ГЕНЕРАЦИЯ EDGE CASES (АНОМАЛИЙ) ---
 		chance := rand.Float64()
 		isSilent := false
 
+		// 1. Сначала генерируем базу
 		data := generateBaseData(id, series, &currentFuel, &lat, &lng)
 
-		if chance < 0.05 { // 5% шанс на аномалию
+		// 2. Накладываем аномалии ПОВЕРХ базы и ОБЯЗАТЕЛЬНО обновляем указатели состояния
+		if chance < 0.05 {
 			anomalyType := rand.Intn(5)
 			switch anomalyType {
 			case 0:
-				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ ОБРЫВА СВЯЗИ (30с)\n", id)
+				fmt.Printf("⚠️ [%s] ОБРЫВ СВЯЗИ\n", id)
 				isSilent = true
 			case 1:
-				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ СКАЧКА СКОРОСТИ\n", id)
+				fmt.Printf("⚠️ [%s] СКАЧОК СКОРОСТИ\n", id)
 				data.Speed = 185.5
 				data.Status = "Critical"
 			case 2:
-				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ ПЕРЕГРЕВА\n", id)
+				fmt.Printf("⚠️ [%s] ПЕРЕГРЕВ\n", id)
 				data.EngineTemp = 115.0
 				data.Status = "Warning"
 			case 3:
-				if series == "TЭ33A" {
-					fmt.Printf("⚠️ [%s] ИМИТАЦИЯ СЛИВА ТОПЛИВА\n", id)
-					currentFuel -= 15.0
+				if series == "TE33A" {
+					fmt.Printf("⚠️ [%s] СЛИВ ТОПЛИВА (-15%%)\n", id)
+					currentFuel -= 15.0 // Обновляем состояние!
 					if currentFuel < 0 {
 						currentFuel = 0
 					}
@@ -136,8 +122,8 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 					data.Status = "Critical"
 				}
 			case 4:
-				fmt.Printf("⚠️ [%s] ИМИТАЦИЯ ПРЫЖКА КООРДИНАТ (GPS СБОЙ)\n", id)
-				lat += 1.0 // jump ~111km
+				fmt.Printf("⚠️ [%s] GPS JUMP\n", id)
+				lat += 0.5 // Обновляем состояние!
 				data.Lat = lat
 				data.Status = "Critical"
 			}
@@ -146,12 +132,10 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 		if !isSilent {
 			payload, _ := json.Marshal(data)
 			if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
-				log.Printf("[%s] Ошибка: %v", id, err)
 				return
 			}
 		} else {
-			// Если имитируем "Выкл", просто ждем и ничего не шлем
-			time.Sleep(30 * time.Second)
+			time.Sleep(15 * time.Second)
 		}
 
 		time.Sleep(1 * time.Second)
@@ -160,23 +144,19 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 
 func generateBaseData(id, series string, fuel *float64, lat *float64, lng *float64) LocomotiveData {
 	speed := 40.0 + rand.Float64()*40.0
-	temp := 70.0 + rand.Float64()*15.0
 
-	// Медленный расход топлива
-	if series == "TЭ33A" {
-		*fuel -= 0.001
+	// Расход топлива
+	if series == "TE33A" {
+		*fuel -= 0.005
 		if *fuel < 0 {
 			*fuel = 0
 		}
 	}
 
-	// Физическое движение координат
-	importMath := true
-	if importMath {
-		distanceKm := speed / 3600.0 // за 1 секунду
-		*lat += (distanceKm / 111.0)
-		*lng += (distanceKm / 111.0) // simplified to constant factor for brevity
-	}
+	// Движение (очень упрощенно: едем на Северо-Восток)
+	dist := speed / 3600.0 / 111.0
+	*lat += dist * 0.7
+	*lng += dist * 0.7
 
 	data := LocomotiveData{
 		LocoID:     id,
@@ -184,9 +164,9 @@ func generateBaseData(id, series string, fuel *float64, lat *float64, lng *float
 		Timestamp:  time.Now().Format(time.RFC3339),
 		Speed:      speed,
 		Position:   rand.Intn(9),
-		PressureTM: 5.2 + (rand.Float64() * 0.2),
-		PressureGR: 9.0 + (rand.Float64() * 0.5),
-		EngineTemp: temp,
+		PressureTM: 5.2 + (rand.Float64() * 0.1),
+		PressureGR: 9.0 + (rand.Float64() * 0.2),
+		EngineTemp: 70.0 + rand.Float64()*10.0,
 		FuelLevel:  *fuel,
 		Lat:        *lat,
 		Lng:        *lng,
@@ -194,8 +174,8 @@ func generateBaseData(id, series string, fuel *float64, lat *float64, lng *float
 	}
 
 	if series == "KZ8A" {
-		data.VoltageCS = 25.0 + (rand.Float64()*2.0 - 1.0)
-		data.Amperage = 800 + rand.Float64()*600
+		data.VoltageCS = 25.0 + (rand.Float64() * 0.5)
+		data.Amperage = 1000 + rand.Float64()*200
 	}
 
 	return data
