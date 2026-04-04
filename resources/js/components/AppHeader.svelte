@@ -47,12 +47,8 @@
     const auth = $derived(page.props.auth);
     const url = currentUrlState();
 
-<<<<<<< HEAD
     const activeItemStyles =
         'text-[#00AAD9] dark:text-[#00AAD9]';
-=======
-    const activeItemStyles = 'text-emerald-600 dark:text-emerald-400';
->>>>>>> 70b3de1d2215d37c83efb3a6de03ccef26c7b035
 </script>
 
 <header
@@ -152,28 +148,15 @@
                 href={toUrl(dashboard())}
                 class="flex items-center gap-2 transition-opacity hover:opacity-80"
             >
-<<<<<<< HEAD
                 <img
                     src="/KTZH-32x32.svg"
                     alt="КТЖ"
-                    class="size-8 shrink-0"
                 />
                 <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:inline lg:hidden">
                     КТЖ
                 </span>
                 <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline">
                     КТЖ Монитор
-=======
-                <div
-                    class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm"
-                >
-                    <AppLogoIcon class="size-4 fill-current text-white" />
-                </div>
-                <span
-                    class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline"
-                >
-                    RailTelemetry
->>>>>>> 70b3de1d2215d37c83efb3a6de03ccef26c7b035
                 </span>
             </Link>
 
