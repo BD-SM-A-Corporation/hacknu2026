@@ -1,0 +1,73 @@
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"telemetry-service/internal/broker"
+	"telemetry-service/internal/processor"
+	"telemetry-service/internal/storage"
+	"telemetry-service/internal/websocket"
+)
+
+func main() {
+	// 1. Initialize core dependencies
+	log.Println("Starting Locomotive Telemetry Service...")
+
+	// Create hub
+	hub := websocket.NewHub()
+	go hub.Run()
+
+	// Create Redis Broker (connecting to local redis server on 6379 by default)
+	rdb := broker.NewRedisBroker("localhost:6379", "", 0)
+
+	// Create PostgreSQL Storage Component
+	// DSN format (change for production)
+	dsn := "host=localhost user=postgres password=postgres dbname=telemetry port=5432 sslmode=disable"
+	dbStorage := storage.NewPostgresStorage(dsn)
+
+	// Create Data Processor Pool
+	transformer := &processor.DefaultTransformer{}
+	// Using 10 workers for concurrent processing
+	pool := processor.NewWorkerPool(10, transformer)
+	pool.Start()
+
+	// 2. Main data pipeline orchestration
+	go func() {
+		for {
+			select {
+			// Listen to incoming telemetry from websocket/device connections
+			case rawPayload := <-hub.IncomingTelemetry:
+				// Forward to worker pool
+				pool.Submit(rawPayload)
+
+			// Listen to processed telemetry states output
+			case state := <-pool.Output():
+				// 1. Broadcast to all active Frontend WebSocket subscribers
+				hub.BroadcastState(state)
+
+				// 2. Publish to Redis for Laravel backend to react (triggers, alerts, history)
+				err := rdb.Publish(context.Background(), "locomotive:telemetry", state)
+				if err != nil {
+					log.Printf("Redis publish error: %v", err)
+				}
+
+				// 3. Asynchronously write row to PostgreSQL/Timescale in batch mode
+				dbStorage.InsertAsync(state)
+			}
+		}
+	}()
+
+	// 3. HTTP Endpoints Setup
+	http.HandleFunc("/telemetry", func(w http.ResponseWriter, r *http.Request) {
+		websocket.ServeWs(hub, w, r)
+	})
+
+	// Add CORS mapping if Laravel app sits on different port
+	// but standard usage within Homestead or similar handles CORS at API Gateway level.
+
+	log.Println("Telemetry service listening on :8080")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatalf("Fatal server error: %v", err)
+	}
+}
