@@ -48,11 +48,12 @@
     const auth = $derived(page.props.auth);
     const url = currentUrlState();
 
-    const activeItemStyles =
-        'text-emerald-600 dark:text-emerald-400';
+    const activeItemStyles = 'text-emerald-600 dark:text-emerald-400';
 </script>
 
-<header class="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/80">
+<header
+    class="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/80"
+>
     <div class="flex h-14 items-center px-4 lg:px-6">
         <!-- ========== LEFT SECTION ========== -->
         <div class="flex items-center gap-1 lg:gap-3">
@@ -79,11 +80,16 @@
                                 class="size-6 fill-current text-black dark:text-white"
                             />
                         </SheetHeader>
-                        <div class="flex h-full flex-1 flex-col space-y-6 pt-6 pb-10">
+                        <div
+                            class="flex h-full flex-1 flex-col space-y-6 pt-6 pb-10"
+                        >
                             <nav class="-mx-3 space-y-1">
                                 <Link
                                     href={toUrl(dashboard())}
-                                    class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.isCurrentUrl(dashboard(), url.currentUrl)
+                                    class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.isCurrentUrl(
+                                        dashboard(),
+                                        url.currentUrl,
+                                    )
                                         ? activeItemStyles
                                         : ''}"
                                 >
@@ -92,7 +98,10 @@
                                 </Link>
                                 <Link
                                     href="/analytics"
-                                    class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.isCurrentUrl('/analytics', url.currentUrl)
+                                    class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.isCurrentUrl(
+                                        '/analytics',
+                                        url.currentUrl,
+                                    )
                                         ? activeItemStyles
                                         : ''}"
                                 >
@@ -100,7 +109,9 @@
                                     Аналитика
                                 </Link>
                             </nav>
-                            <div class="flex flex-col space-y-3 border-t border-zinc-200 dark:border-zinc-800 pt-4">
+                            <div
+                                class="flex flex-col space-y-3 border-t border-zinc-200 dark:border-zinc-800 pt-4"
+                            >
                                 <Link
                                     href={toUrl(edit())}
                                     class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -109,7 +120,7 @@
                                     <span>Настройки</span>
                                 </Link>
                                 <a
-                                    href="https://github.com/laravel/svelte-starter-kit"
+                                    href="https://github.com/BD-SM-A-Corporation/hacknu2026.git"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -117,15 +128,13 @@
                                     <Folder class="h-5 w-5" />
                                     <span>Репозиторий</span>
                                 </a>
-                                <a
-                                    href="https://laravel.com/docs/starter-kits#svelte"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <Link
+                                    href="/docs"
                                     class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                                 >
                                     <BookOpen class="h-5 w-5" />
                                     <span>Документация</span>
-                                </a>
+                                </Link>
                             </div>
                         </div>
                     </SheetContent>
@@ -142,13 +151,17 @@
                 >
                     <AppLogoIcon class="size-4 fill-current text-white" />
                 </div>
-                <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline">
+                <span
+                    class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline"
+                >
                     RailTelemetry
                 </span>
             </Link>
 
             <!-- Separator -->
-            <div class="mx-2 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"></div>
+            <div
+                class="mx-2 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"
+            ></div>
 
             <!-- Dashboard Button -->
             <Link
@@ -163,7 +176,9 @@
             </Link>
 
             <!-- Separator -->
-            <div class="mx-1 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"></div>
+            <div
+                class="mx-1 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"
+            ></div>
 
             <!-- Analytics Button -->
             <Link
@@ -238,10 +253,8 @@
                     <Tooltip>
                         <TooltipTrigger>
                             {#snippet child({ props })}
-                                <a
-                                    href="https://laravel.com/docs/starter-kits#svelte"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <Link
+                                    href="/docs"
                                     {...props}
                                     class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 group"
                                 >
@@ -249,7 +262,7 @@
                                     <BookOpen
                                         class="size-[18px] text-zinc-500 group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-200 transition-colors"
                                     />
-                                </a>
+                                </Link>
                             {/snippet}
                         </TooltipTrigger>
                         <TooltipContent>
@@ -260,7 +273,9 @@
             </div>
 
             <!-- Separator -->
-            <div class="mx-1 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"></div>
+            <div
+                class="mx-1 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"
+            ></div>
 
             <!-- Profile Menu -->
             <DropdownMenu>

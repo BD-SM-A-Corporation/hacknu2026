@@ -11,6 +11,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ])->name('dashboard');
 
     Route::inertia('analytics', 'Analytics')->name('analytics');
+
+    Route::get('docs/{version?}/{page?}', [\App\Http\Controllers\DocumentationController::class, 'show'])
+        ->where('page', '.*')
+        ->name('docs.show');
 });
 
 require __DIR__.'/settings.php';
