@@ -74,6 +74,14 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 	}
 	defer conn.Close()
 
+	go func() {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}()
+
 	// Состояние
 	currentFuel := 85.0
 	if series == "KZ8A" {
