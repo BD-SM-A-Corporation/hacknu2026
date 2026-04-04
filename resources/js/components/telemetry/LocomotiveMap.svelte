@@ -204,7 +204,7 @@
     }
 </script>
 
-<div class="{$isFullscreen ? 'fixed inset-0 z-[9999] bg-zinc-100 dark:bg-zinc-950 p-6' : 'mb-6'} w-full transition-all duration-300 relative group">
+<div class="w-full transition-all duration-300 group {$isFullscreen ? 'fixed inset-0 z-[9999] bg-zinc-100 dark:bg-zinc-950 p-6' : 'mb-6 relative'}">
     <div class="{$isFullscreen ? 'h-full rounded-2xl' : 'h-[450px] rounded-xl'} w-full overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm relative z-0">
         <div bind:this={mapElement} class="w-full h-full"></div>
         <div class="absolute top-4 right-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur px-3 py-2 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 pointer-events-none z-[400] text-sm flex items-center shadow-lg font-medium">
