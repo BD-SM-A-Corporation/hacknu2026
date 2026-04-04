@@ -4,10 +4,9 @@
     import Folder from 'lucide-svelte/icons/folder';
     import LayoutGrid from 'lucide-svelte/icons/layout-grid';
     import Menu from 'lucide-svelte/icons/menu';
-    import Search from 'lucide-svelte/icons/search';
-    import AppLogo from '@/components/AppLogo.svelte';
+    import Settings from 'lucide-svelte/icons/settings';
     import AppLogoIcon from '@/components/AppLogoIcon.svelte';
-    import Breadcrumbs from '@/components/Breadcrumbs.svelte';
+    import DateRangePicker from '@/components/telemetry/DateRangePicker.svelte';
     import {
         Avatar,
         AvatarFallback,
@@ -19,12 +18,6 @@
         DropdownMenuContent,
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu';
-    import {
-        NavigationMenu,
-        NavigationMenuItem,
-        NavigationMenuList,
-        navigationMenuTriggerStyle,
-    } from '@/components/ui/navigation-menu';
     import {
         Sheet,
         SheetContent,
@@ -43,7 +36,8 @@
     import { getInitials } from '@/lib/initials';
     import { toUrl } from '@/lib/utils';
     import { dashboard } from '@/routes';
-    import type { BreadcrumbItem, NavItem } from '@/types';
+    import { edit } from '@/routes/profile';
+    import type { BreadcrumbItem } from '@/types';
 
     let {
         breadcrumbs = [],
@@ -55,33 +49,13 @@
     const url = currentUrlState();
 
     const activeItemStyles =
-        'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
-
-    const mainNavItems: NavItem[] = [
-        {
-            title: 'Dashboard',
-            href: dashboard(),
-            icon: LayoutGrid,
-        },
-    ];
-
-    const rightNavItems: NavItem[] = [
-        {
-            title: 'Repository',
-            href: 'https://github.com/laravel/svelte-starter-kit',
-            icon: Folder,
-        },
-        {
-            title: 'Documentation',
-            href: 'https://laravel.com/docs/starter-kits#svelte',
-            icon: BookOpen,
-        },
-    ];
+        'text-emerald-600 dark:text-emerald-400';
 </script>
 
-<div>
-    <div class="border-b border-sidebar-border/80">
-        <div class="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
+<header class="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/80">
+    <div class="flex h-14 items-center px-4 lg:px-6">
+        <!-- ========== LEFT SECTION ========== -->
+        <div class="flex items-center gap-1 lg:gap-3">
             <!-- Mobile Menu -->
             <div class="lg:hidden">
                 <Sheet>
@@ -90,7 +64,7 @@
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                class="mr-2 h-9 w-9"
+                                class="mr-1 h-9 w-9"
                                 onclick={props.onclick}
                                 aria-expanded={props['aria-expanded']}
                             >
@@ -99,181 +73,219 @@
                         {/snippet}
                     </SheetTrigger>
                     <SheetContent side="left" class="w-[300px] p-6">
-                        <SheetTitle class="sr-only">Navigation menu</SheetTitle>
+                        <SheetTitle class="sr-only">Навигация</SheetTitle>
                         <SheetHeader class="flex justify-start text-left">
                             <AppLogoIcon
                                 class="size-6 fill-current text-black dark:text-white"
                             />
                         </SheetHeader>
-                        <div
-                            class="flex h-full flex-1 flex-col justify-between space-y-4 pt-6 pb-10"
-                        >
+                        <div class="flex h-full flex-1 flex-col space-y-6 pt-6 pb-10">
                             <nav class="-mx-3 space-y-1">
-                                {#each mainNavItems as item (toUrl(item.href))}
-                                    <Link
-                                        href={toUrl(item.href)}
-                                        class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.whenCurrentUrl(
-                                            item.href,
-                                            url.currentUrl,
-                                            activeItemStyles,
-                                            '',
-                                        ) ?? ''}"
-                                    >
-                                        {#if item.icon}
-                                            <item.icon class="h-5 w-5" />
-                                        {/if}
-                                        {item.title}
-                                    </Link>
-                                {/each}
+                                <Link
+                                    href={toUrl(dashboard())}
+                                    class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.isCurrentUrl(dashboard(), url.currentUrl)
+                                        ? activeItemStyles
+                                        : ''}"
+                                >
+                                    <LayoutGrid class="h-5 w-5" />
+                                    Дэшборд
+                                </Link>
                             </nav>
-                            <div class="flex flex-col space-y-4">
-                                {#each rightNavItems as item (toUrl(item.href))}
-                                    <a
-                                        href={toUrl(item.href)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="flex items-center space-x-2 text-sm font-medium"
-                                    >
-                                        {#if item.icon}
-                                            <item.icon class="h-5 w-5" />
-                                        {/if}
-                                        <span>{item.title}</span>
-                                    </a>
-                                {/each}
+                            <div class="border-t border-zinc-200 dark:border-zinc-800 pt-4">
+                                <div class="text-xs text-zinc-400 uppercase tracking-wider mb-3">Период</div>
+                                <DateRangePicker />
+                            </div>
+                            <div class="flex flex-col space-y-3 border-t border-zinc-200 dark:border-zinc-800 pt-4">
+                                <Link
+                                    href={toUrl(edit())}
+                                    class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                                >
+                                    <Settings class="h-5 w-5" />
+                                    <span>Настройки</span>
+                                </Link>
+                                <a
+                                    href="https://github.com/laravel/svelte-starter-kit"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                                >
+                                    <Folder class="h-5 w-5" />
+                                    <span>Репозиторий</span>
+                                </a>
+                                <a
+                                    href="https://laravel.com/docs/starter-kits#svelte"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                                >
+                                    <BookOpen class="h-5 w-5" />
+                                    <span>Документация</span>
+                                </a>
                             </div>
                         </div>
                     </SheetContent>
                 </Sheet>
             </div>
 
-            <Link href={toUrl(dashboard())} class="flex items-center gap-x-2">
-                <AppLogo />
+            <!-- Logo -->
+            <Link
+                href={toUrl(dashboard())}
+                class="flex items-center gap-2 transition-opacity hover:opacity-80"
+            >
+                <div
+                    class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm"
+                >
+                    <AppLogoIcon class="size-4 fill-current text-white" />
+                </div>
+                <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline">
+                    RailTelemetry
+                </span>
             </Link>
 
-            <!-- Desktop Menu -->
-            <div class="hidden h-full lg:flex lg:flex-1">
-                <NavigationMenu class="ml-10 flex h-full items-stretch">
-                    <NavigationMenuList
-                        class="flex h-full items-stretch space-x-2"
-                    >
-                        {#each mainNavItems as item (toUrl(item.href))}
-                            <NavigationMenuItem
-                                class="relative flex h-full items-center"
-                            >
+            <!-- Separator -->
+            <div class="mx-2 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"></div>
+
+            <!-- Dashboard Button -->
+            <Link
+                href={toUrl(dashboard())}
+                class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors lg:flex
+                    {url.isCurrentUrl(dashboard(), url.currentUrl)
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                    : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'}"
+            >
+                <LayoutGrid class="h-4 w-4" />
+                Дэшборд
+            </Link>
+
+            <!-- Separator -->
+            <div class="mx-1 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"></div>
+
+            <!-- Date Range Picker -->
+            <div class="hidden items-center lg:flex">
+                <DateRangePicker />
+            </div>
+        </div>
+
+        <!-- ========== RIGHT SECTION ========== -->
+        <div class="ml-auto flex items-center gap-1 lg:gap-2">
+            <!-- Settings -->
+            <div class="hidden lg:flex">
+                <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            {#snippet child({ props })}
                                 <Link
-                                    class="{navigationMenuTriggerStyle()} {url.whenCurrentUrl(
-                                        item.href,
-                                        url.currentUrl,
-                                        activeItemStyles,
-                                        '',
-                                    ) ?? ''} h-9 cursor-pointer px-4"
-                                    href={toUrl(item.href)}
+                                    href={toUrl(edit())}
+                                    {...props}
+                                    class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 group"
                                 >
-                                    {#if item.icon}
-                                        <item.icon class="mr-2 h-4 w-4" />
-                                    {/if}
-                                    {item.title}
+                                    <span class="sr-only">Настройки</span>
+                                    <Settings
+                                        class="size-[18px] text-zinc-500 group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-200 transition-colors"
+                                    />
                                 </Link>
-                                {#if url.isCurrentUrl(item.href, url.currentUrl)}
-                                    <div
-                                        class="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"
-                                    ></div>
-                                {/if}
-                            </NavigationMenuItem>
-                        {/each}
-                    </NavigationMenuList>
-                </NavigationMenu>
+                            {/snippet}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Настройки</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </div>
 
-            <div class="ml-auto flex items-center space-x-2">
-                <div class="relative flex items-center space-x-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        class="group h-9 w-9 cursor-pointer"
-                    >
-                        <Search
-                            class="size-5 opacity-80 group-hover:opacity-100"
-                        />
-                    </Button>
-
-                    <div class="hidden space-x-1 lg:flex">
-                        {#each rightNavItems as item (toUrl(item.href))}
-                            <TooltipProvider delayDuration={0}>
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        {#snippet child({ props })}
-                                            <a
-                                                href={toUrl(item.href)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                {...props}
-                                                class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-9 w-9 group cursor-pointer"
-                                            >
-                                                <span class="sr-only"
-                                                    >{item.title}</span
-                                                >
-                                                <item.icon
-                                                    class="size-5 opacity-80 group-hover:opacity-100"
-                                                />
-                                            </a>
-                                        {/snippet}
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{item.title}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        {/each}
-                    </div>
-                </div>
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        {#snippet children(props)}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
-                                onclick={props.onclick}
-                                aria-expanded={props['aria-expanded']}
-                                data-state={props['data-state']}
-                            >
-                                <Avatar
-                                    class="size-8 overflow-hidden rounded-full"
+            <!-- Repository -->
+            <div class="hidden lg:flex">
+                <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            {#snippet child({ props })}
+                                <a
+                                    href="https://github.com/laravel/svelte-starter-kit"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    {...props}
+                                    class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 group"
                                 >
-                                    {#if auth.user?.avatar}
-                                        <AvatarImage
-                                            src={auth.user.avatar}
-                                            alt={auth.user?.name}
-                                        />
-                                    {/if}
-                                    <AvatarFallback
-                                        class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
-                                    >
-                                        {getInitials(auth.user?.name ?? '')}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        {/snippet}
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-56">
-                        {#if auth.user}
-                            <UserMenuContent user={auth.user} />
-                        {/if}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                                    <span class="sr-only">Репозиторий</span>
+                                    <Folder
+                                        class="size-[18px] text-zinc-500 group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-200 transition-colors"
+                                    />
+                                </a>
+                            {/snippet}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Репозиторий</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </div>
+
+            <!-- Documentation -->
+            <div class="hidden lg:flex">
+                <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            {#snippet child({ props })}
+                                <a
+                                    href="https://laravel.com/docs/starter-kits#svelte"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    {...props}
+                                    class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 group"
+                                >
+                                    <span class="sr-only">Документация</span>
+                                    <BookOpen
+                                        class="size-[18px] text-zinc-500 group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-200 transition-colors"
+                                    />
+                                </a>
+                            {/snippet}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Документация</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
+
+            <!-- Separator -->
+            <div class="mx-1 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"></div>
+
+            <!-- Profile Menu -->
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    {#snippet children(props)}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="relative size-9 w-auto rounded-full p-0.5 transition-all hover:ring-2 hover:ring-emerald-500/30"
+                            onclick={props.onclick}
+                            aria-expanded={props['aria-expanded']}
+                            data-state={props['data-state']}
+                        >
+                            <Avatar
+                                class="size-8 overflow-hidden rounded-full ring-2 ring-zinc-200 dark:ring-zinc-700"
+                            >
+                                {#if auth.user?.avatar}
+                                    <AvatarImage
+                                        src={auth.user.avatar}
+                                        alt={auth.user?.name}
+                                    />
+                                {/if}
+                                <AvatarFallback
+                                    class="rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-xs font-bold text-white"
+                                >
+                                    {getInitials(auth.user?.name ?? '')}
+                                </AvatarFallback>
+                            </Avatar>
+                        </Button>
+                    {/snippet}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-56">
+                    {#if auth.user}
+                        <UserMenuContent user={auth.user} />
+                    {/if}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     </div>
-
-    {#if breadcrumbs.length > 1}
-        <div class="flex w-full border-b border-sidebar-border/70">
-            <div
-                class="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl"
-            >
-                <Breadcrumbs {breadcrumbs} />
-            </div>
-        </div>
-    {/if}
-</div>
+</header>
