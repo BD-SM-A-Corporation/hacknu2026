@@ -51,17 +51,23 @@ func main() {
 
 			// Listen to processed telemetry states output
 			case state := <-pool.Output():
+				// 0. Update Heartbeat in Redis
+				if err := rdb.UpdateHeartbeat(context.Background(), state.LocomotiveID); err != nil {
+					log.Printf("Heartbeat error: %v", err)
+				}
+
 				// 1. Broadcast to all active Frontend WebSocket subscribers
 				hub.BroadcastState(state)
 
-				// 2. Publish to Redis for Laravel backend to react (triggers, alerts, history)
-				err := rdb.Publish(context.Background(), "locomotive:telemetry", state)
-				if err != nil {
-					log.Printf("Redis publish error: %v", err)
+				// 2. Synchronous write row to PostgreSQL
+				if err := dbStorage.InsertSync(state); err != nil {
+					log.Printf("DB insert error: %v", err)
+				} else {
+					// 3. Publish to Redis for Laravel backend to react AFTER DB write
+					if err := rdb.Publish(context.Background(), "locomotive-updates", state); err != nil {
+						log.Printf("Redis publish error: %v", err)
+					}
 				}
-
-				// 3. Asynchronously write row to PostgreSQL/Timescale in batch mode
-				dbStorage.InsertAsync(state)
 			}
 		}
 	}()

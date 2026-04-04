@@ -2,6 +2,7 @@ package processor
 
 import (
 	"log"
+	"math"
 	"sync"
 )
 
@@ -13,6 +14,8 @@ type WorkerPool struct {
 	transformer DataTransformer
 	numWorkers  int
 	wg          sync.WaitGroup
+	prevStates  map[string]*LocomotiveState
+	mu          sync.RWMutex
 }
 
 // NewWorkerPool initializes the pool.
@@ -22,6 +25,7 @@ func NewWorkerPool(workers int, transformer DataTransformer) *WorkerPool {
 		outgoing:    make(chan *LocomotiveState, 10000),
 		transformer: transformer,
 		numWorkers:  workers,
+		prevStates:  make(map[string]*LocomotiveState),
 	}
 }
 
@@ -46,6 +50,23 @@ func (wp *WorkerPool) worker(id int) {
 		}
 
 		// Further rules, validation could be placed here before sending it out.
+		wp.mu.Lock()
+		if prevState, exists := wp.prevStates[state.LocomotiveID]; exists {
+			timeDiff := state.Timestamp.Sub(prevState.Timestamp).Seconds()
+			if timeDiff > 0 {
+				// Speed change > 40 km/h per second
+				if (math.Abs(state.Speed-prevState.Speed) / timeDiff) > 40.0 {
+					state.IsAnomaly = true
+				}
+				// Fuel jump/drop > 5% means likely anomaly
+				if math.Abs(state.FuelLevel-prevState.FuelLevel) > 5.0 {
+					state.IsAnomaly = true
+				}
+			}
+		}
+		// Save for next comparison
+		wp.prevStates[state.LocomotiveID] = state
+		wp.mu.Unlock()
 
 		wp.outgoing <- state
 	}

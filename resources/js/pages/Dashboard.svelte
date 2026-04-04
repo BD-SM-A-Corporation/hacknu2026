@@ -25,6 +25,8 @@
     import LocomotiveSelectorModal from '@/components/telemetry/LocomotiveSelectorModal.svelte';
     import UserSettingsModal from '@/components/telemetry/UserSettingsModal.svelte';
     import WebSocketConfigModal from '@/components/telemetry/WebSocketConfigModal.svelte';
+    
+    import TelemetryChart from '@/components/telemetry/TelemetryChart.svelte';
 
     // Stores
     import { activeLocomotiveId } from '@/lib/telemetry';
@@ -106,29 +108,9 @@
         <FuelWidget />
     </div>
 
-    <!-- Live Charts placeholder / extra wide widget area -->
+    <!-- Live Charts -->
     <div class="mt-6">
-        <div
-            class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 min-h-64 flex items-center justify-center shadow-sm"
-        >
-            <div class="text-center opacity-50">
-                <svg
-                    class="mx-auto h-12 w-12 mb-3"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"
-                    ></polyline></svg
-                >
-                <p>Место для графиков динамики (Chart.js / D3)</p>
-            </div>
-        </div>
+        <TelemetryChart />
     </div>
 {:else}
     <div

@@ -3,8 +3,8 @@
 Единая система управления телеметрией локомотивов, состоящая из:
 
 - **Svelte 5 + Inertia v3 Dashboard** (SPA)
-- **Laravel 11 API Backend** (CRUD локомотивов, управление WS-эндпоинтами, аутентификация)
-- **Go 1.22 Microservice** (Высоконагруженный брокер `gorilla/websocket`, воркер-пулы на горутинах, пакетная агрегация `LocomotiveState`)
+- **Laravel 13 API Backend** (CRUD локомотивов, управление WS-эндпоинтами, аутентификация)
+- **Go 1.26 Microservice** (Высоконагруженный брокер `gorilla/websocket`, воркер-пулы на горутинах, пакетная агрегация `LocomotiveState`)
 
 ## Требования
 

@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Locomotive;
 use App\Http\Resources\LocomotiveResource;
+use App\Models\Locomotive;
+use App\Models\TelemetryHistory;
 use Illuminate\Http\Request;
 
 class LocomotiveController extends Controller
@@ -29,6 +30,7 @@ class LocomotiveController extends Controller
         ]);
 
         $locomotive = Locomotive::create($validated);
+
         return new LocomotiveResource($locomotive);
     }
 
@@ -38,6 +40,7 @@ class LocomotiveController extends Controller
     public function show(string $id)
     {
         $locomotive = Locomotive::findOrFail($id);
+
         return new LocomotiveResource($locomotive);
     }
 
@@ -53,6 +56,7 @@ class LocomotiveController extends Controller
         ]);
 
         $locomotive->update($validated);
+
         return new LocomotiveResource($locomotive);
     }
 
@@ -63,6 +67,20 @@ class LocomotiveController extends Controller
     {
         $locomotive = Locomotive::findOrFail($id);
         $locomotive->delete();
+
         return response()->noContent();
+    }
+
+    /**
+     * Display the latest 50 telemetry stats.
+     */
+    public function stats(string $id)
+    {
+        $stats = TelemetryHistory::where('locomotive_id', $id)
+            ->orderBy('timestamp', 'desc')
+            ->take(50)
+            ->get();
+
+        return response()->json($stats);
     }
 }

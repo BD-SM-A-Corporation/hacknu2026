@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"telemetry-service/internal/processor"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -29,6 +30,11 @@ func NewRedisBroker(addr string, password string, db int) *RedisBroker {
 	}
 
 	return &RedisBroker{client: rdb}
+}
+
+func (rb *RedisBroker) UpdateHeartbeat(ctx context.Context, locomotiveID string) error {
+	key := "loco:last_seen:" + locomotiveID
+	return rb.client.Set(ctx, key, time.Now().Unix(), 60*time.Second).Err()
 }
 
 // Publish broadcasts the LocomotiveState to the specified Redis channel.
