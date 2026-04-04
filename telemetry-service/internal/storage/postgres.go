@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type TelemetryHistory struct {
@@ -27,11 +28,18 @@ func (TelemetryHistory) TableName() string {
 }
 
 type PostgresStorage struct {
-	db *gorm.DB
+	db     *gorm.DB
+	buffer chan *TelemetryHistory
 }
 
 func NewPostgresStorage(dsn string) *PostgresStorage {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// GORM Tuning: SkipDefaultTransaction and PrepareStmt for performance
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger:                 logger.Default.LogMode(logger.Warn), // Only log slow/error SQL
+		SkipDefaultTransaction: true,
+		PrepareStmt:            true,
+	})
+
 	if err != nil {
 		log.Printf("[WARNING] DB connection failed (skipping auto-migration): %v", err)
 		return &PostgresStorage{
@@ -39,12 +47,26 @@ func NewPostgresStorage(dsn string) *PostgresStorage {
 		}
 	}
 
+	// Connection Pool Tuning
+	sqldb, err := db.DB()
+	if err == nil {
+		sqldb.SetMaxOpenConns(25)
+		sqldb.SetMaxIdleConns(10)
+		sqldb.SetConnMaxLifetime(5 * time.Minute)
+	}
+
+	// We still run AutoMigrate but Laravel migration will handle indexes more explicitly
 	db.AutoMigrate(&TelemetryHistory{})
 	log.Println("PostgreSQL connection established and schema migrated.")
 
-	return &PostgresStorage{
-		db: db,
+	ps := &PostgresStorage{
+		db:     db,
+		buffer: make(chan *TelemetryHistory, 1000), // Buffer for up to 1000 records
 	}
+
+	go ps.startBatchWorker()
+
+	return ps
 }
 
 func (ps *PostgresStorage) InsertSync(state *processor.LocomotiveState) error {
@@ -64,5 +86,48 @@ func (ps *PostgresStorage) InsertSync(state *processor.LocomotiveState) error {
 		Timestamp:    state.Timestamp,
 	}
 
-	return ps.db.Create(record).Error
+	// Non-blocking send to buffer
+	select {
+	case ps.buffer <- record:
+		return nil
+	default:
+		log.Printf("[WARNING] Telemetry buffer full, dropping record for %s", state.LocomotiveID)
+		return nil
+	}
+}
+
+func (ps *PostgresStorage) startBatchWorker() {
+	ticker := time.NewTicker(500 * time.Millisecond) // Flush every 500ms
+	defer ticker.Stop()
+
+	var batch []*TelemetryHistory
+	batchSize := 100
+
+	for {
+		select {
+		case record := <-ps.buffer:
+			batch = append(batch, record)
+			if len(batch) >= batchSize {
+				ps.flush(batch)
+				batch = nil
+			}
+		case <-ticker.C:
+			if len(batch) > 0 {
+				ps.flush(batch)
+				batch = nil
+			}
+		}
+	}
+}
+
+func (ps *PostgresStorage) flush(batch []*TelemetryHistory) {
+	if ps.db == nil || len(batch) == 0 {
+		return
+	}
+
+	// Use GORM CreateInBatches for high efficiency
+	err := ps.db.CreateInBatches(batch, len(batch)).Error
+	if err != nil {
+		log.Printf("[ERROR] Failed to flush telemetry batch: %v", err)
+	}
 }
