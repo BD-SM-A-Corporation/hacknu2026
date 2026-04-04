@@ -78,7 +78,7 @@ class LocomotiveController extends Controller
     {
         $stats = TelemetryHistory::where('locomotive_id', $id)
             ->orderBy('timestamp', 'desc')
-            ->take(50)
+            ->take(500)
             ->get();
 
         return response()->json($stats);

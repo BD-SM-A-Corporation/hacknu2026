@@ -57,7 +57,10 @@ func main() {
 				}
 
 				// 1. Broadcast to all active Frontend WebSocket subscribers
-				hub.BroadcastState(state)
+				// SKIP broadcast if GPS is corrupted (prevents map from jumping)
+				if !state.GpsCorrupted {
+					hub.BroadcastState(state)
+				}
 
 				// 2. Synchronous write row to PostgreSQL
 				if err := dbStorage.InsertSync(state); err != nil {

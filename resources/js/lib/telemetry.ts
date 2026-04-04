@@ -19,7 +19,19 @@ export const telemetryData = writable<TelemetryData>({
     timestamp: new Date().toISOString(),
 });
 
-export const activeLocomotiveId = writable<string | null>(null);
+export const activeLocomotiveId = writable<string | null>(
+    typeof window !== 'undefined'
+        ? localStorage.getItem('activeLocomotiveId')
+        : null,
+);
+
+if (typeof window !== 'undefined') {
+    activeLocomotiveId.subscribe((value) => {
+        if (value) {
+            localStorage.setItem('activeLocomotiveId', value);
+        }
+    });
+}
 
 // Functions to update the telemetry safely
 export function updateTelemetry(data: Partial<TelemetryData>) {

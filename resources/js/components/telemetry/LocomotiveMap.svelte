@@ -78,43 +78,63 @@
             maxZoom: 20
         }).addTo(map);
 
+        // 1. Load from localStorage for instant recovery
+        const savedPaths = localStorage.getItem('locomotive_paths');
+        let cachedPaths: Record<string, [number, number][]> = {};
+        if (savedPaths) {
+            try {
+                cachedPaths = JSON.parse(savedPaths);
+                Object.entries(cachedPaths).forEach(([id, latlngs]) => {
+                    const path = L.polyline(latlngs, {
+                        color: '#10b981', // Default green, will be updated
+                        weight: 3,
+                        opacity: 0.6,
+                        dashArray: '5, 8'
+                    }).addTo(map);
+                    polylines[id] = path;
+                });
+            } catch (e) {
+                console.error("Failed to parse cached paths", e);
+            }
+        }
+
         const res = await fetch('/api/map/positions');
         const locos: MapLocomotive[] = await res.json();
 
         locos.forEach(async loco => {
             modelsData[loco.id] = loco.series || 'Тепловоз';
+            const color = getStatusColor(loco.status);
 
-            // Draw historical path
-            try {
-                const histRes = await fetch(`/api/locomotives/${loco.id}/stats`);
+            // 2. Complement with API history if not in cache or to refresh
+            if (!polylines[loco.id]) {
+                try {
+                    const histRes = await fetch(`/api/locomotives/${loco.id}/stats`);
+                    if (histRes.ok) {
+                        const stats = await histRes.json();
+                        const latlngs = stats
+                            .filter((s: any) => s.lat && s.lng)
+                            .reverse()
+                            .map((s: any) => [parseFloat(s.lat), parseFloat(s.lng)]);
 
-                if (histRes.ok) {
-                    const stats = await histRes.json();
-                    const color = getStatusColor(loco.status);
-
-                    const latlngs = stats
-                        .filter((s: any) => s.lat && s.lng)
-                        .reverse() // reverse to draw from oldest to newest
-                        .map((s: any) => [parseFloat(s.lat), parseFloat(s.lng)]);
-
-                    if (latlngs.length > 0) {
-                        const path = L.polyline(latlngs, {
-                            color: color,
-                            weight: 3,
-                            opacity: 0.6,
-                            dashArray: '5, 8'
-                        }).addTo(map);
-                        polylines[loco.id] = path;
-
-                        // Set map view to show all paths optionally here if wanted
+                        if (latlngs.length > 0) {
+                            const path = L.polyline(latlngs, {
+                                color: color,
+                                weight: 3,
+                                opacity: 0.6,
+                                dashArray: '5, 8'
+                            }).addTo(map);
+                            polylines[loco.id] = path;
+                        }
                     }
+                } catch (e) {
+                    console.error("Failed to map path", e);
                 }
-            } catch (e) {
-                console.error("Failed to map path", e);
+            } else {
+                // Update color of cached path
+                polylines[loco.id].setStyle({ color: color });
             }
 
             if (loco.lat && loco.lng) {
-                const color = getStatusColor(loco.status);
                 const marker = L.marker([loco.lat, loco.lng], { icon: createTrainIcon(color) }).addTo(map);
                 bindPopup(marker, loco.id, modelsData[loco.id], loco.speed);
                 markers[loco.id] = marker;
@@ -185,6 +205,19 @@
                     dashArray: '5, 8'
                 }).addTo(map);
                 polylines[id] = path;
+            }
+
+            // Persistence: Save to localStorage (limit to last 200 points per loco)
+            const savedPaths = localStorage.getItem('locomotive_paths');
+            let cachedPaths: Record<string, [number, number][]> = savedPaths ? JSON.parse(savedPaths) : {};
+            if (!cachedPaths[id]) cachedPaths[id] = [];
+
+            // Avoid duplicates if same as last
+            const lastPoint = cachedPaths[id][cachedPaths[id].length - 1];
+            if (!lastPoint || lastPoint[0] !== lat || lastPoint[1] !== lng) {
+                cachedPaths[id].push([lat, lng]);
+                if (cachedPaths[id].length > 200) cachedPaths[id].shift();
+                localStorage.setItem('locomotive_paths', JSON.stringify(cachedPaths));
             }
 
             if (markers[id]) {
