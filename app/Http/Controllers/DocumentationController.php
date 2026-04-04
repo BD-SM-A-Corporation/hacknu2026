@@ -33,6 +33,8 @@ class DocumentationController extends Controller
         $title = 'Документация';
         if (preg_match('/^#\s+(.+)$/m', $content, $matches)) {
             $title = tap($matches[1], fn($t) => trim($t));
+            // Remove the h1 from content
+            $content = preg_replace('/^#\s+.+\r?\n?/m', '', $content, 1);
         }
 
         return Inertia::render('Docs/Show', [
