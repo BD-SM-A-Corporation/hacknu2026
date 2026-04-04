@@ -11,12 +11,12 @@ import (
 
 type TelemetryHistory struct {
 	ID           uint   `gorm:"primaryKey"`
-	LocomotiveID string `gorm:"index"`
+	LocomotiveID string `gorm:"index:idx_loco_time"`
 	Speed        float64
 	Temperature  float64
 	Pressure     float64
 	FuelLevel    float64
-	Timestamp    time.Time `gorm:"index"`
+	Timestamp    time.Time `gorm:"index:idx_loco_time;index:idx_timestamp"`
 }
 
 type PostgresStorage struct {
