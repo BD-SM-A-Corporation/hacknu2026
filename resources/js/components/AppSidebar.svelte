@@ -33,6 +33,11 @@
             href: dashboard(),
             icon: LayoutGrid,
         },
+        {
+            title: 'Analytics',
+            href: '/analytics', 
+            icon: BookOpen,
+        },
     ];
 
     const footerNavItems: NavItem[] = [

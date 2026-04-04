@@ -25,8 +25,6 @@
     import LocomotiveSelectorModal from '@/components/telemetry/LocomotiveSelectorModal.svelte';
     import UserSettingsModal from '@/components/telemetry/UserSettingsModal.svelte';
     import WebSocketConfigModal from '@/components/telemetry/WebSocketConfigModal.svelte';
-    
-    import TelemetryChart from '@/components/telemetry/TelemetryChart.svelte';
 
     // Stores
     import { activeLocomotiveId } from '@/lib/telemetry';
@@ -106,11 +104,6 @@
         <TemperatureWidget />
         <PressureWidget />
         <FuelWidget />
-    </div>
-
-    <!-- Live Charts -->
-    <div class="mt-6">
-        <TelemetryChart />
     </div>
 {:else}
     <div

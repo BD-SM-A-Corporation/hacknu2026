@@ -5,8 +5,8 @@
     import LayoutGrid from 'lucide-svelte/icons/layout-grid';
     import Menu from 'lucide-svelte/icons/menu';
     import Settings from 'lucide-svelte/icons/settings';
+    import Activity from 'lucide-svelte/icons/activity';
     import AppLogoIcon from '@/components/AppLogoIcon.svelte';
-    import DateRangePicker from '@/components/telemetry/DateRangePicker.svelte';
     import {
         Avatar,
         AvatarFallback,
@@ -90,11 +90,16 @@
                                     <LayoutGrid class="h-5 w-5" />
                                     Дэшборд
                                 </Link>
+                                <Link
+                                    href="/analytics"
+                                    class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.isCurrentUrl('/analytics', url.currentUrl)
+                                        ? activeItemStyles
+                                        : ''}"
+                                >
+                                    <Activity class="h-5 w-5" />
+                                    Аналитика
+                                </Link>
                             </nav>
-                            <div class="border-t border-zinc-200 dark:border-zinc-800 pt-4">
-                                <div class="text-xs text-zinc-400 uppercase tracking-wider mb-3">Период</div>
-                                <DateRangePicker />
-                            </div>
                             <div class="flex flex-col space-y-3 border-t border-zinc-200 dark:border-zinc-800 pt-4">
                                 <Link
                                     href={toUrl(edit())}
@@ -160,10 +165,17 @@
             <!-- Separator -->
             <div class="mx-1 hidden h-5 w-px bg-zinc-200 dark:bg-zinc-700 lg:block"></div>
 
-            <!-- Date Range Picker -->
-            <div class="hidden items-center lg:flex">
-                <DateRangePicker />
-            </div>
+            <!-- Analytics Button -->
+            <Link
+                href="/analytics"
+                class="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors lg:flex
+                    {url.currentUrl.startsWith('/analytics')
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                    : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'}"
+            >
+                <Activity class="h-4 w-4" />
+                Аналитика
+            </Link>
         </div>
 
         <!-- ========== RIGHT SECTION ========== -->
