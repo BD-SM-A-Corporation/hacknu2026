@@ -184,18 +184,24 @@
     }
 
     $effect(() => {
+        // Читаем переменные состояния ДО условия, чтобы Svelte гарантированно отслеживал их изменения!
+        const speed = showSpeed;
+        const temp = showTemperature;
+        const press = showPressure;
+        const fuel = showFuel;
+
         if (chart) {
-            chart.data.datasets[0].hidden = !showSpeed;
-            chart.data.datasets[1].hidden = !showTemperature;
-            chart.data.datasets[2].hidden = !showPressure;
-            chart.data.datasets[3].hidden = !showFuel;
+            chart.data.datasets[0].hidden = !speed;
+            chart.data.datasets[1].hidden = !temp;
+            chart.data.datasets[2].hidden = !press;
+            chart.data.datasets[3].hidden = !fuel;
             
             // Динамически скрываем оси, если метрика отключена
             if (chart.options?.scales?.yTemp) {
-                chart.options.scales.yTemp.display = showTemperature;
+                chart.options.scales.yTemp.display = temp;
             }
             if (chart.options?.scales?.yPress) {
-                chart.options.scales.yPress.display = showPressure;
+                chart.options.scales.yPress.display = press;
             }
             
             chart.update();
