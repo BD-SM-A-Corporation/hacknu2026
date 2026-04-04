@@ -1,17 +1,53 @@
 <script lang="ts">
-    import ModalContainer from './ModalContainer.svelte';
+    import { onMount } from 'svelte';
+    import { index, store as storeEndpoint } from '@/actions/App/Http/Controllers/Api/EndpointController';
+
     import { isWebSocketConfigOpen, closeWebSocketConfig } from '@/lib/uiStore';
     import { wsClient } from '@/lib/websocketClient';
+    import ModalContainer from './ModalContainer.svelte';
 
     let endpointUrl = 'ws://localhost:8080/telemetry';
+    let savedEndpoints: { id: number, url: string, is_active: boolean }[] = [];
     let isConnected = false;
     let importError = '';
+
+    onMount(async () => {
+        try {
+            const res = await fetch(index.url());
+
+            if (res.ok) {
+                const data = await res.json();
+                savedEndpoints = data.data || [];
+            }
+        } catch (e) {
+            console.error('Failed to load endpoints');
+        }
+    });
 
     wsClient.onConnect = () => isConnected = true;
     wsClient.onDisconnect = () => isConnected = false;
 
-    function applyEndpoint() {
+    async function applyEndpoint(urlToApply = endpointUrl) {
+        endpointUrl = urlToApply;
         wsClient.setUrl(endpointUrl);
+
+        // Also save to backend
+        try {
+            await fetch(storeEndpoint.url(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ url: endpointUrl, is_active: true })
+            });
+            // Update list silently
+            const res = await fetch(index.url());
+
+            if (res.ok) {
+                const data = await res.json();
+                savedEndpoints = data.data || [];
+            }
+        } catch(e) {
+            console.error('Failed to save endpoint', e);
+        }
     }
 
     function handleFileUpload(event: Event) {
@@ -43,7 +79,7 @@
                 }
 
                 if (!importError) {
-                    applyEndpoint();
+                    applyEndpoint(endpointUrl);
                 }
             } catch (err) {
                 importError = 'Ошибка парсинга файла';
@@ -61,18 +97,34 @@
     <div class="space-y-6">
         <div>
             <label class="block text-sm font-medium mb-2 opacity-80">Текущий Endpoint</label>
-            <div class="flex gap-2">
-                <input
-                    type="text"
-                    bind:value={endpointUrl}
-                    class="w-full px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-sm"
-                />
-                <button
-                    on:click={applyEndpoint}
-                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-                >
-                    Подключить
-                </button>
+            <div class="flex flex-col gap-2">
+                <div class="flex gap-2">
+                    <input
+                        type="text"
+                        bind:value={endpointUrl}
+                        class="w-full px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-sm"
+                    />
+                    <button
+                        on:click={() => applyEndpoint()}
+                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                    >
+                        Подключить
+                    </button>
+                </div>
+
+                {#if savedEndpoints.length > 0}
+                <div class="mt-2 text-sm opacity-80 mb-1">Сохраненные эндпоинты:</div>
+                <div class="flex flex-wrap gap-2">
+                    {#each savedEndpoints as endp}
+                        <button
+                            on:click={() => applyEndpoint(endp.url)}
+                            class="px-3 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 rounded-full text-xs font-mono transition-colors"
+                        >
+                            {endp.url}
+                        </button>
+                    {/each}
+                </div>
+                {/if}
             </div>
 
             <div class="mt-3 flex items-center gap-2 text-sm">

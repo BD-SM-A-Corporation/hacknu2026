@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
+    import { index } from '@/actions/App/Http/Controllers/Api/LocomotiveController';
     import { activeLocomotiveId } from '@/lib/telemetry';
     import {
         isLocomotiveSelectorOpen,
@@ -7,19 +9,27 @@
     import ModalContainer from './ModalContainer.svelte';
 
     let searchQuery = '';
+    let allLocomotives: { id: string, model: string, depot: string, status?: string }[] = [];
+    let isLoading = true;
 
-    // Mock locomotives list
-    const allLocomotives = [
-        { id: 'VL80-1234', type: 'ВЛ80', status: 'active', route: 'Нур-Султан - Алматы' },
-        { id: 'KZ4A-0001', type: 'KZ4A', status: 'idle', route: 'Алматы - Шымкент' },
-        { id: 'TE33A-0150', type: 'ТЭ33А', status: 'maintenance', route: 'В депо' },
-        { id: '2TE10M-3001', type: '2ТЭ10М', status: 'active', route: 'Караганда - Астана' },
-        { id: 'VL80-5566', type: 'ВЛ80', status: 'active', route: 'Тараз - Шу' }
-    ];
+    onMount(async () => {
+        try {
+            const response = await fetch(index.url());
+
+            if (response.ok) {
+                const res = await response.json();
+                allLocomotives = res.data || [];
+            }
+        } catch (e) {
+            console.error('Failed to load locomotives:', e);
+        } finally {
+            isLoading = false;
+        }
+    });
 
     $: filteredLocomotives = allLocomotives.filter(l =>
         l.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        l.type.toLowerCase().includes(searchQuery.toLowerCase())
+        l.model.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     function selectLocomotive(id: string) {
@@ -44,7 +54,10 @@
     </div>
 
     <div class="space-y-2 max-h-80 overflow-y-auto pr-2">
-        {#each filteredLocomotives as loco}
+        {#if isLoading}
+            <div class="text-center py-8 opacity-50">Загрузка локомотивов...</div>
+        {:else}
+            {#each filteredLocomotives as loco}
             <button
                 class={`w-full text-left p-3 rounded-xl border transition-all ${
                     $activeLocomotiveId === loco.id
@@ -57,21 +70,21 @@
                     <span class="font-bold text-lg">{loco.id}</span>
                     <span class={`text-xs px-2 py-1 rounded-full ${
                         loco.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                        loco.status === 'idle' ? 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400' :
-                        'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                        'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
                     }`}>
-                        {loco.status === 'active' ? 'В пути' : loco.status === 'idle' ? 'Простой' : 'Обслуживание'}
+                        {loco.status === 'active' ? 'В пути' : 'В депо'}
                     </span>
                 </div>
                 <div class="flex justify-between text-sm opacity-70">
-                    <span>Тип: {loco.type}</span>
-                    <span>{loco.route}</span>
+                    <span>Модель: {loco.model}</span>
+                    <span>{loco.depot || 'Без депо'}</span>
                 </div>
             </button>
-        {:else}
-            <div class="text-center py-8 opacity-50">
-                Локомотивы не найдены
-            </div>
-        {/each}
+            {:else}
+                <div class="text-center py-8 opacity-50">
+                    Локомотивы не найдены
+                </div>
+            {/each}
+        {/if}
     </div>
 </ModalContainer>
