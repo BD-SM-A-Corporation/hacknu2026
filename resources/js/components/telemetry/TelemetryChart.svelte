@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
+    import { get } from 'svelte/store';
     import { Chart, registerables } from 'chart.js';
-    import { telemetryData } from '@/lib/telemetry';
+    import { telemetryData, activeLocomotiveId } from '@/lib/telemetry';
 
     Chart.register(...registerables);
 
@@ -25,8 +26,9 @@
 
     let unsubscribe: () => void;
 
-    onMount(() => {
+    onMount(async () => {
         chart = new Chart(canvas, {
+            // ... existing config ...
             type: 'line',
             data: {
                 labels,
@@ -85,8 +87,90 @@
             },
         });
 
+        const id = get(activeLocomotiveId);
+        if (id) {
+            // 1. Try to load from localStorage first
+            const cached = localStorage.getItem(`telemetry_chart_${id}`);
+            if (cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    labels = data.labels || [];
+                    speedData = data.speedData || [];
+                    temperatureData = data.temperatureData || [];
+                    pressureData = data.pressureData || [];
+                    fuelData = data.fuelData || [];
+
+                    // Update chart with cached data
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = speedData;
+                    chart.data.datasets[1].data = temperatureData;
+                    chart.data.datasets[2].data = pressureData;
+                    chart.data.datasets[3].data = fuelData;
+                    chart.update();
+                } catch (e) {
+                    console.error('Failed to parse cached chart data', e);
+                }
+            }
+
+            // 2. Refresh from API to get any missed data
+            try {
+                const res = await fetch(`/api/locomotives/${id}/stats`);
+                if (res.ok) {
+                    const history = await res.json();
+
+                    if (history.length > 0) {
+                        const sortedHistory = history.reverse();
+                        const newLabels: any[] = [];
+                        const newSpeed: any[] = [];
+                        const newTemp: any[] = [];
+                        const newPress: any[] = [];
+                        const newFuel: any[] = [];
+
+                        sortedHistory.forEach((record: any) => {
+                            const time = new Date(
+                                record.timestamp,
+                            ).toLocaleTimeString();
+                            newLabels.push(time);
+                            newSpeed.push(record.speed);
+                            newTemp.push(record.temperature);
+                            newPress.push(record.pressure);
+                            newFuel.push(record.fuel_level || record.fuelLevel);
+                        });
+
+                        labels = newLabels;
+                        speedData = newSpeed;
+                        temperatureData = newTemp;
+                        pressureData = newPress;
+                        fuelData = newFuel;
+
+                        chart.data.labels = labels;
+                        chart.data.datasets[0].data = speedData;
+                        chart.data.datasets[1].data = temperatureData;
+                        chart.data.datasets[2].data = pressureData;
+                        chart.data.datasets[3].data = fuelData;
+                        chart.update();
+
+                        // Update cache
+                        localStorage.setItem(
+                            `telemetry_chart_${id}`,
+                            JSON.stringify({
+                                labels,
+                                speedData,
+                                temperatureData,
+                                pressureData,
+                                fuelData,
+                            }),
+                        );
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch historical stats', err);
+            }
+        }
+
         unsubscribe = telemetryData.subscribe((data) => {
-            if (!data.locomotiveId) return; // Skip if empty
+            if (!data.locomotiveId || (data.locomotiveId !== id && id !== ''))
+                return; // Ensure we stick to the initial ID for this modal instance
 
             const timeString = new Date(data.timestamp).toLocaleTimeString();
 
@@ -106,6 +190,19 @@
 
             if (chart) {
                 chart.update();
+                // Save to localStorage on every update
+                if (id) {
+                    localStorage.setItem(
+                        `telemetry_chart_${id}`,
+                        JSON.stringify({
+                            labels,
+                            speedData,
+                            temperatureData,
+                            pressureData,
+                            fuelData,
+                        }),
+                    );
+                }
             }
         });
     });
@@ -131,26 +228,63 @@
     class="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm min-h-[300px] h-[400px]"
 >
     <!-- Custom Controls over the chart -->
-    <div class="absolute top-4 right-4 z-10 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm flex flex-col gap-1.5 text-sm min-w-[140px]">
-        <span class="font-medium text-xs text-zinc-500 uppercase tracking-wider mb-1 px-1">Отображение</span>
-        
-        <label class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showSpeed ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}">
-            <input type="checkbox" bind:checked={showSpeed} class="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:bg-zinc-800 dark:border-zinc-600" />
+    <div
+        class="absolute top-4 right-4 z-10 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm flex flex-col gap-1.5 text-sm min-w-[140px]"
+    >
+        <span
+            class="font-medium text-xs text-zinc-500 uppercase tracking-wider mb-1 px-1"
+            >Отображение</span
+        >
+
+        <label
+            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showSpeed
+                ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+        >
+            <input
+                type="checkbox"
+                bind:checked={showSpeed}
+                class="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:bg-zinc-800 dark:border-zinc-600"
+            />
             <span class="font-medium">Скорость</span>
         </label>
-        
-        <label class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showTemperature ? 'bg-red-500/15 text-red-700 dark:bg-red-500/25 dark:text-red-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}">
-            <input type="checkbox" bind:checked={showTemperature} class="rounded border-zinc-300 text-red-600 focus:ring-red-500 dark:bg-zinc-800 dark:border-zinc-600" />
+
+        <label
+            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showTemperature
+                ? 'bg-red-500/15 text-red-700 dark:bg-red-500/25 dark:text-red-300'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+        >
+            <input
+                type="checkbox"
+                bind:checked={showTemperature}
+                class="rounded border-zinc-300 text-red-600 focus:ring-red-500 dark:bg-zinc-800 dark:border-zinc-600"
+            />
             <span class="font-medium">Температура</span>
         </label>
-        
-        <label class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showPressure ? 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/25 dark:text-blue-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}">
-            <input type="checkbox" bind:checked={showPressure} class="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-600" />
+
+        <label
+            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showPressure
+                ? 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/25 dark:text-blue-300'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+        >
+            <input
+                type="checkbox"
+                bind:checked={showPressure}
+                class="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-600"
+            />
             <span class="font-medium">Давление</span>
         </label>
-        
-        <label class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showFuel ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}">
-            <input type="checkbox" bind:checked={showFuel} class="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:bg-zinc-800 dark:border-zinc-600" />
+
+        <label
+            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showFuel
+                ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+        >
+            <input
+                type="checkbox"
+                bind:checked={showFuel}
+                class="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:bg-zinc-800 dark:border-zinc-600"
+            />
             <span class="font-medium">Топливо</span>
         </label>
     </div>

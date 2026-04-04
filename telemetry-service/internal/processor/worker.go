@@ -37,6 +37,18 @@ func (wp *WorkerPool) Start() {
 	}
 }
 
+// computeDistance calculates the approximate distance between two points in kilometers.
+func computeDistance(lat1, lng1, lat2, lng2 float64) float64 {
+	const R = 6371 // Earth radius in km
+	dLat := (lat2 - lat1) * math.Pi / 180
+	dLng := (lng2 - lng1) * math.Pi / 180
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
+			math.Sin(dLng/2)*math.Sin(dLng/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return R * c
+}
+
 // worker converts raw bytes to parsed structure.
 func (wp *WorkerPool) worker(id int) {
 	defer wp.wg.Done()
@@ -49,7 +61,7 @@ func (wp *WorkerPool) worker(id int) {
 			continue
 		}
 
-		// Further rules, validation could be placed here before sending it out.
+		// Basic boundary validation
 		state.GpsCorrupted = false
 		if state.Lat < 40.0 || state.Lat > 56.0 || state.Lng < 46.0 || state.Lng > 88.0 {
 			state.GpsCorrupted = true
@@ -59,18 +71,30 @@ func (wp *WorkerPool) worker(id int) {
 		if prevState, exists := wp.prevStates[state.LocomotiveID]; exists {
 			timeDiff := state.Timestamp.Sub(prevState.Timestamp).Seconds()
 			if timeDiff > 0 {
-				// Speed change > 40 km/h per second
+				// 1. Detect GPS Jumps (Bug)
+				// If distance moved > 5km in a short interval (e.g. < 60s), it's likely a GPS bug.
+				dist := computeDistance(prevState.Lat, prevState.Lng, state.Lat, state.Lng)
+				if dist > 5.0 && timeDiff < 60.0 {
+					log.Printf("[Worker %d] GPS Jump Detected for %s: %.2f km in %.2fs", id, state.LocomotiveID, dist, timeDiff)
+					state.GpsCorrupted = true
+					state.IsAnomaly = true
+				}
+
+				// 2. Speed change > 40 km/h per second
 				if (math.Abs(state.Speed-prevState.Speed) / timeDiff) > 40.0 {
 					state.IsAnomaly = true
 				}
-				// Fuel jump/drop > 5% means likely anomaly
+
+				// 3. Fuel jump/drop > 5% means likely anomaly
 				if math.Abs(state.FuelLevel-prevState.FuelLevel) > 5.0 {
 					state.IsAnomaly = true
 				}
 			}
 		}
-		// Save for next comparison
-		wp.prevStates[state.LocomotiveID] = state
+		// Save for next comparison (only if GPS is NOT corrupted, otherwise we'd compare against a bad point next)
+		if !state.GpsCorrupted {
+			wp.prevStates[state.LocomotiveID] = state
+		}
 		wp.mu.Unlock()
 
 		wp.outgoing <- state
