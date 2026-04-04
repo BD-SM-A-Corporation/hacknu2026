@@ -22,6 +22,7 @@ type LocomotiveState struct {
 	Temperature  float64   `json:"temperature"`
 	Pressure     float64   `json:"pressure"`
 	FuelLevel    float64   `json:"fuelLevel"`
+	IsAnomaly    bool      `json:"is_anomaly"`
 	Timestamp    time.Time `json:"timestamp"`
 }
 

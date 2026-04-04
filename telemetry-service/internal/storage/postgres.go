@@ -16,12 +16,16 @@ type TelemetryHistory struct {
 	Temperature  float64
 	Pressure     float64
 	FuelLevel    float64
+	IsAnomaly    bool
 	Timestamp    time.Time `gorm:"index:idx_loco_time;index:idx_timestamp"`
 }
 
+func (TelemetryHistory) TableName() string {
+	return "telemetry_logs"
+}
+
 type PostgresStorage struct {
-	db        *gorm.DB
-	batchChan chan *TelemetryHistory
+	db *gorm.DB
 }
 
 func NewPostgresStorage(dsn string) *PostgresStorage {
@@ -29,27 +33,21 @@ func NewPostgresStorage(dsn string) *PostgresStorage {
 	if err != nil {
 		log.Printf("[WARNING] DB connection failed (skipping auto-migration): %v", err)
 		return &PostgresStorage{
-			db:        nil,
-			batchChan: make(chan *TelemetryHistory, 1000),
+			db: nil,
 		}
 	}
 
 	db.AutoMigrate(&TelemetryHistory{})
 	log.Println("PostgreSQL connection established and schema migrated.")
 
-	ps := &PostgresStorage{
-		db:        db,
-		batchChan: make(chan *TelemetryHistory, 10000),
+	return &PostgresStorage{
+		db: db,
 	}
-
-	go ps.startBatchProcessor()
-
-	return ps
 }
 
-func (ps *PostgresStorage) InsertAsync(state *processor.LocomotiveState) {
+func (ps *PostgresStorage) InsertSync(state *processor.LocomotiveState) error {
 	if ps.db == nil {
-		return
+		return nil
 	}
 
 	record := &TelemetryHistory{
@@ -58,39 +56,9 @@ func (ps *PostgresStorage) InsertAsync(state *processor.LocomotiveState) {
 		Temperature:  state.Temperature,
 		Pressure:     state.Pressure,
 		FuelLevel:    state.FuelLevel,
+		IsAnomaly:    state.IsAnomaly,
 		Timestamp:    state.Timestamp,
 	}
 
-	ps.batchChan <- record
-}
-
-func (ps *PostgresStorage) startBatchProcessor() {
-	var batch []*TelemetryHistory
-	ticker := time.NewTicker(1 * time.Second)
-	batchSize := 100
-
-	for {
-		select {
-		case record := <-ps.batchChan:
-			batch = append(batch, record)
-			if len(batch) >= batchSize {
-				ps.flush(batch)
-				batch = nil
-			}
-		case <-ticker.C:
-			if len(batch) > 0 {
-				ps.flush(batch)
-				batch = nil
-			}
-		}
-	}
-}
-
-func (ps *PostgresStorage) flush(batch []*TelemetryHistory) {
-	if ps.db == nil {
-		return
-	}
-	if err := ps.db.Create(&batch).Error; err != nil {
-		log.Printf("Batch insert failed: %v", err)
-	}
+	return ps.db.Create(record).Error
 }
