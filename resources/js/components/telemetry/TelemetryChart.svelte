@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
+    import { get } from 'svelte/store';
     import { Chart, registerables } from 'chart.js';
-    import { telemetryData } from '@/lib/telemetry';
+    import { telemetryData, activeLocomotiveId } from '@/lib/telemetry';
 
     Chart.register(...registerables);
 
@@ -25,8 +26,9 @@
 
     let unsubscribe: () => void;
 
-    onMount(() => {
+    onMount(async () => {
         chart = new Chart(canvas, {
+            // ... existing config ...
             type: 'line',
             data: {
                 labels,
@@ -85,11 +87,86 @@
             }
         });
 
+        const id = get(activeLocomotiveId);
+        if (id) {
+            // 1. Try to load from localStorage first
+            const cached = localStorage.getItem(`telemetry_chart_${id}`);
+            if (cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    labels = data.labels || [];
+                    speedData = data.speedData || [];
+                    temperatureData = data.temperatureData || [];
+                    pressureData = data.pressureData || [];
+                    fuelData = data.fuelData || [];
+
+                    // Update chart with cached data
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = speedData;
+                    chart.data.datasets[1].data = temperatureData;
+                    chart.data.datasets[2].data = pressureData;
+                    chart.data.datasets[3].data = fuelData;
+                    chart.update();
+                } catch (e) {
+                    console.error("Failed to parse cached chart data", e);
+                }
+            }
+
+            // 2. Refresh from API to get any missed data
+            try {
+                const res = await fetch(`/api/locomotives/${id}/stats`);
+                if (res.ok) {
+                    const history = await res.json();
+
+                    if (history.length > 0) {
+                        const sortedHistory = history.reverse();
+                        const newLabels: any[] = [];
+                        const newSpeed: any[] = [];
+                        const newTemp: any[] = [];
+                        const newPress: any[] = [];
+                        const newFuel: any[] = [];
+
+                        sortedHistory.forEach((record: any) => {
+                            const time = new Date(record.timestamp).toLocaleTimeString();
+                            newLabels.push(time);
+                            newSpeed.push(record.speed);
+                            newTemp.push(record.temperature);
+                            newPress.push(record.pressure);
+                            newFuel.push(record.fuel_level || record.fuelLevel);
+                        });
+
+                        labels = newLabels;
+                        speedData = newSpeed;
+                        temperatureData = newTemp;
+                        pressureData = newPress;
+                        fuelData = newFuel;
+
+                        chart.data.labels = labels;
+                        chart.data.datasets[0].data = speedData;
+                        chart.data.datasets[1].data = temperatureData;
+                        chart.data.datasets[2].data = pressureData;
+                        chart.data.datasets[3].data = fuelData;
+                        chart.update();
+
+                        // Update cache
+                        localStorage.setItem(`telemetry_chart_${id}`, JSON.stringify({
+                            labels, speedData, temperatureData, pressureData, fuelData
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch historical stats", err);
+            }
+        }
+
         unsubscribe = telemetryData.subscribe((data) => {
-            if (!data.locomotiveId) return; // Skip if empty
+            if (!data.locomotiveId || (data.locomotiveId !== id && id !== '')) return; // Ensure we stick to the initial ID for this modal instance
 
             const timeString = new Date(data.timestamp).toLocaleTimeString();
-            
+
+            // Check if last added was same timestamp (avoid duplicates from fast pings)
+            if (labels.length > 0 && labels[labels.length - 1] === timeString) return;
+
             labels.push(timeString);
             speedData.push(data.speed);
             temperatureData.push(data.temperature);
@@ -106,6 +183,12 @@
 
             if (chart) {
                 chart.update();
+                // Save to localStorage on every update
+                if (id) {
+                    localStorage.setItem(`telemetry_chart_${id}`, JSON.stringify({
+                        labels, speedData, temperatureData, pressureData, fuelData
+                    }));
+                }
             }
         });
     });
