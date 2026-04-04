@@ -17,5 +17,8 @@ class Locomotive extends Model
         'model',
         'depot',
         'status',
+        'lat',
+        'lng',
+        'speed',
     ];
 }

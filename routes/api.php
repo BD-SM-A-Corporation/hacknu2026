@@ -12,6 +12,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('locomotives/{locomotive}/stats', [LocomotiveController::class, 'stats']);
+    Route::get('map/positions', [LocomotiveController::class, 'positions']);
     Route::apiResource('locomotives', LocomotiveController::class);
     Route::apiResource('endpoints', EndpointController::class);
     Route::get('telemetry/analytics', [TelemetryAnalyticsController::class, 'index']);

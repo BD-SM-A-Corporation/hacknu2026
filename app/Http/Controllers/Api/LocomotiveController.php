@@ -83,4 +83,13 @@ class LocomotiveController extends Controller
 
         return response()->json($stats);
     }
+
+    /**
+     * Get real-time positions
+     */
+    public function positions()
+    {
+        $locomotives = Locomotive::select('id', 'model as series', 'lat', 'lng', 'speed', 'status')->get();
+        return response()->json($locomotives);
+    }
 }

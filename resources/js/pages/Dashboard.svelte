@@ -20,6 +20,7 @@
     import TemperatureWidget from '@/components/telemetry/TemperatureWidget.svelte';
     import PressureWidget from '@/components/telemetry/PressureWidget.svelte';
     import FuelWidget from '@/components/telemetry/FuelWidget.svelte';
+    import LocomotiveMap from '@/components/telemetry/LocomotiveMap.svelte';
 
     // UI Modals
     import LocomotiveSelectorModal from '@/components/telemetry/LocomotiveSelectorModal.svelte';
@@ -95,6 +96,9 @@
         </button>
     </div>
 </div>
+
+<!-- Map Component ALWAYS shown -->
+<LocomotiveMap />
 
 <!-- Telemetry Dashboard Grid -->
 {#if $activeLocomotiveId}

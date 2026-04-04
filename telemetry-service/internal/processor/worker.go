@@ -50,6 +50,11 @@ func (wp *WorkerPool) worker(id int) {
 		}
 
 		// Further rules, validation could be placed here before sending it out.
+		state.GpsCorrupted = false
+		if state.Lat < 40.0 || state.Lat > 56.0 || state.Lng < 46.0 || state.Lng > 88.0 {
+			state.GpsCorrupted = true
+		}
+
 		wp.mu.Lock()
 		if prevState, exists := wp.prevStates[state.LocomotiveID]; exists {
 			timeDiff := state.Timestamp.Sub(prevState.Timestamp).Seconds()
