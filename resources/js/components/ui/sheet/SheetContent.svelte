@@ -46,10 +46,21 @@
 
         return { ...axis, duration: 260, opacity: 1 };
     };
+
+    function portal(node: HTMLElement) {
+        document.body.appendChild(node);
+        return {
+            destroy() {
+                if (node.parentNode) {
+                    node.parentNode.removeChild(node);
+                }
+            }
+        };
+    }
 </script>
 
 {#if open()}
-    <div class="fixed inset-0 z-50">
+    <div use:portal class="fixed inset-0 z-[100]">
         <button
             type="button"
             class="fixed inset-0 border-0 bg-black/50"

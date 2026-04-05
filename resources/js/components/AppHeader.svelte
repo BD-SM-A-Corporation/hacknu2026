@@ -47,8 +47,8 @@
     const auth = $derived(page.props.auth);
     const url = currentUrlState();
 
-    const activeItemStyles =
-        'text-[#00AAD9] dark:text-[#00AAD9]';
+    const activeItemStyles = 'text-[#00AAD9] dark:text-[#00AAD9]';
+    let mobileMenuOpen = $state(false);
 </script>
 
 <header
@@ -59,7 +59,7 @@
         <div class="flex items-center gap-1 lg:gap-3">
             <!-- Mobile Menu -->
             <div class="lg:hidden">
-                <Sheet>
+                <Sheet bind:open={mobileMenuOpen}>
                     <SheetTrigger asChild>
                         {#snippet children(props)}
                             <Button
@@ -73,7 +73,7 @@
                             </Button>
                         {/snippet}
                     </SheetTrigger>
-                    <SheetContent side="left" class="w-[300px] p-6">
+                    <SheetContent side="left" class="w-[300px] p-6 z-[100]">
                         <SheetTitle class="sr-only">Навигация</SheetTitle>
                         <SheetHeader class="flex justify-start text-left">
                             <img
@@ -88,6 +88,7 @@
                             <nav class="-mx-3 space-y-1">
                                 <Link
                                     href={toUrl(dashboard())}
+                                    onclick={() => mobileMenuOpen = false}
                                     class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.isCurrentUrl(
                                         dashboard(),
                                         url.currentUrl,
@@ -100,6 +101,7 @@
                                 </Link>
                                 <Link
                                     href="/analytics"
+                                    onclick={() => mobileMenuOpen = false}
                                     class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent {url.isCurrentUrl(
                                         '/analytics',
                                         url.currentUrl,
@@ -116,6 +118,7 @@
                             >
                                 <Link
                                     href={toUrl(edit())}
+                                    onclick={() => mobileMenuOpen = false}
                                     class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                                 >
                                     <Settings class="h-5 w-5" />
@@ -125,6 +128,7 @@
                                     href="https://github.com/BD-SM-A-Corporation/hacknu2026.git"
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onclick={() => mobileMenuOpen = false}
                                     class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                                 >
                                     <Folder class="h-5 w-5" />
@@ -132,6 +136,7 @@
                                 </a>
                                 <Link
                                     href="/docs"
+                                    onclick={() => mobileMenuOpen = false}
                                     class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                                 >
                                     <BookOpen class="h-5 w-5" />
@@ -148,14 +153,15 @@
                 href={toUrl(dashboard())}
                 class="flex items-center gap-2 transition-opacity hover:opacity-80"
             >
-                <img
-                    src="/KTZH-32x32.svg"
-                    alt="КТЖ"
-                />
-                <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:inline lg:hidden">
+                <img src="/KTZH-32x32.svg" alt="КТЖ" />
+                <span
+                    class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:inline lg:hidden"
+                >
                     КТЖ
                 </span>
-                <span class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline">
+                <span
+                    class="hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-100 lg:inline"
+                >
                     КТЖ Монитор
                 </span>
             </Link>
