@@ -15,5 +15,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('map/positions', [LocomotiveController::class, 'positions']);
     Route::apiResource('locomotives', LocomotiveController::class);
     Route::apiResource('endpoints', EndpointController::class);
-    Route::get('telemetry/analytics', [TelemetryAnalyticsController::class, 'index']);
+    
+    Route::get('telemetry/analytics/all', [TelemetryAnalyticsController::class, 'allLocomotives'])->name('api.telemetry.all');
+    Route::get('telemetry/anomalies', [TelemetryAnalyticsController::class, 'anomaliesHistory'])->name('api.telemetry.anomalies');
+    Route::get('telemetry/analytics', [TelemetryAnalyticsController::class, 'index'])->name('api.telemetry.analytics');
 });
