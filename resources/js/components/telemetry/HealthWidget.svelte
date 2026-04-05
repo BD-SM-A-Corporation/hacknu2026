@@ -2,7 +2,8 @@
     import { telemetryData } from '@/lib/telemetry';
     import WidgetCard from './WidgetCard.svelte';
 
-    $: score = $telemetryData.healthScore;
+    export let overrideHealth: number | undefined = undefined;
+    $: score = overrideHealth !== undefined ? overrideHealth : $telemetryData.healthScore;
 
     // Normal health is > 85, warning > 60, critical < 60
     $: status = (score < 60 ? 'critical' : score < 85 ? 'warning' : 'normal') as 'critical' | 'warning' | 'normal';

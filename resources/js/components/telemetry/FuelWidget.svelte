@@ -2,7 +2,8 @@
     import { telemetryData } from '@/lib/telemetry';
     import WidgetCard from './WidgetCard.svelte';
 
-    const fuelLevel = $derived($telemetryData.fuelLevel);
+    let { overrideFuel = undefined }: { overrideFuel?: number } = $props();
+    const fuelLevel = $derived(overrideFuel !== undefined ? overrideFuel : $telemetryData.fuelLevel);
     const status = $derived(
         fuelLevel <= 10 ? 'critical' : fuelLevel <= 20 ? 'warning' : 'normal',
     );

@@ -2,7 +2,8 @@
     import WidgetCard from './WidgetCard.svelte';
     import { telemetryData } from '@/lib/telemetry';
 
-    $: pressure = $telemetryData.pressure;
+    export let overridePressure: number | undefined = undefined;
+    $: pressure = overridePressure !== undefined ? overridePressure : $telemetryData.pressure;
 
     // Pressure logic: normal 4-8. warning 3-4 or 8-10. critical < 3 or > 10.
     $: status = (pressure < 3 || pressure > 10) ? 'critical' :

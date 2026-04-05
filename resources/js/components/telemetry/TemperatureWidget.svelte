@@ -2,7 +2,8 @@
     import { telemetryData } from '@/lib/telemetry';
     import WidgetCard from './WidgetCard.svelte';
 
-    $: temperature = $telemetryData.temperature;
+    export let overrideTemperature: number | undefined = undefined;
+    $: temperature = overrideTemperature !== undefined ? overrideTemperature : $telemetryData.temperature;
 
     // Engine temp logic: < 90 normal, 90-105 warning, > 105 critical
     $: status = (temperature > 105 ? 'critical' : temperature > 90 ? 'warning' : 'normal') as 'critical' | 'warning' | 'normal';

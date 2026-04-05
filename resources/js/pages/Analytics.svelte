@@ -11,7 +11,8 @@
 
 <script lang="ts">
     import AppHead from '@/components/AppHead.svelte';
-    import { activeLocomotiveId } from '@/lib/telemetry';
+    import { activeLocomotiveId, allTelemetry } from '@/lib/telemetry';
+    import { isRealtime } from '@/lib/dateRangeStore';
     import { wsClient } from '@/lib/websocketClient';
     import { onMount } from 'svelte';
     import TelemetryChart from '@/components/telemetry/TelemetryChart.svelte';
@@ -56,17 +57,18 @@
     }
 
     function downloadAnomaliesCSV() {
-        if (!anomalies.length) return;
+        if (!displayAnomalies.length) return;
 
-        let csvContent = 'ID локомотива;Дата и Время;Health Score;Скорость (км/ч);Температура (°C);Давление;Уровень топлива\n';
-        anomalies.forEach((item) => {
+        let csvContent = 'ID локомотива;Дата и Время;Событие;Health Score;Скорость (км/ч);Температура (°C);Давление;Уровень топлива\n';
+        displayAnomalies.forEach((item) => {
             const dt = new Date(item.timestamp).toLocaleString('ru-RU');
+            const eventLabel = item._label || 'Аномалия';
             const hs = item.health_score || 0;
             const speed = Number(item.speed).toFixed(2);
             const temp = Number(item.temperature).toFixed(2);
             const press = Number(item.pressure).toFixed(2);
             const fuel = Number(item.fuel_level).toFixed(2);
-            csvContent += `"${item.locomotive_id}";"${dt}";${hs};${speed};${temp};${press};${fuel}\n`;
+            csvContent += `"${item.locomotive_id}";"${dt}";"${eventLabel}";${hs};${speed};${temp};${press};${fuel}\n`;
         });
 
         const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -78,8 +80,54 @@
         document.body.removeChild(link);
     }
 
+    let now = Date.now();
+
     onMount(() => {
         wsClient.connect();
+
+        const interval = setInterval(() => {
+            now = Date.now();
+        }, 2000);
+        return () => clearInterval(interval);
+    });
+    let displayAnomalies = $derived.by(() => {
+        let active: any[] = [];
+        
+        Object.values($allTelemetry).forEach(loco => {
+            if (!loco.locomotiveId) return;
+
+            const locoTime = new Date(loco.timestamp).getTime();
+            const isDropped = $isRealtime && (now - locoTime > 10000);
+
+            if (isDropped) {
+                active.push({
+                    locomotive_id: loco.locomotiveId,
+                    timestamp: new Date().toISOString(),
+                    health_score: loco.healthScore || 0,
+                    speed: loco.speed || 0,
+                    temperature: loco.temperature || 0,
+                    pressure: loco.pressure || 0,
+                    fuel_level: loco.fuelLevel || 0,
+                    _label: "ОБРЫВ СВЯЗИ"
+                });
+            } else if (loco.alerts && loco.alerts.length > 0) {
+                loco.alerts.forEach(a => {
+                    active.push({
+                        locomotive_id: loco.locomotiveId,
+                        timestamp: new Date(loco.timestamp).toISOString(),
+                        health_score: loco.healthScore,
+                        speed: loco.speed,
+                        temperature: loco.temperature,
+                        pressure: loco.pressure,
+                        fuel_level: loco.fuelLevel,
+                        _label: a
+                    });
+                });
+            }
+        });
+
+        const combined = [...active, ...anomalies];
+        return combined.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     });
 
     function handleRangeSelected(start: Date, end: Date) {
@@ -148,20 +196,25 @@
             <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden flex flex-col min-h-[500px] h-full shadow-sm">
                 {#if loadingAnomalies}
                     <div class="p-8 flex justify-center mt-20"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div></div>
-                {:else if anomalies.length === 0}
+                {:else if displayAnomalies.length === 0}
                     <div class="p-8 flex flex-col items-center justify-center text-zinc-500 h-full mt-10">
                         <svg class="w-12 h-12 mb-3 text-zinc-300 dark:text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         <p>Нет критических событий</p>
                     </div>
                 {:else}
                     <div class="overflow-y-auto flex-1 p-3">
-                        {#each anomalies as anomaly}
+                        {#each displayAnomalies as anomaly}
                             <button 
                                 class="w-full text-left p-3 mb-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"
                                 onclick={() => openCriticalModal(anomaly)}
                             >
                                 <div class="flex justify-between items-start mb-1">
-                                    <span class="font-mono text-sm font-bold text-red-700 dark:text-red-400">{anomaly.locomotive_id}</span>
+                                    <div class="flex flex-col items-start gap-1">
+                                        <span class="font-mono text-sm font-bold text-red-700 dark:text-red-400">{anomaly.locomotive_id}</span>
+                                        {#if anomaly._label}
+                                            <span class="bg-red-600 text-white text-[10px] uppercase font-bold px-1.5 py-0.5 rounded shadow-sm">{anomaly._label}</span>
+                                        {/if}
+                                    </div>
                                     <span class="text-xs font-medium text-zinc-500">{new Date(anomaly.timestamp).toLocaleTimeString('ru-RU')}</span>
                                 </div>
                                 <div class="text-xs text-zinc-600 dark:text-zinc-400 flex flex-wrap items-center gap-2 mt-2">

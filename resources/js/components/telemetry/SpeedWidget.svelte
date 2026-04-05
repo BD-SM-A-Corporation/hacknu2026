@@ -2,7 +2,8 @@
     import { telemetryData } from '@/lib/telemetry';
     import WidgetCard from './WidgetCard.svelte';
 
-    $: speed = $telemetryData.speed;
+    export let overrideSpeed: number | undefined = undefined;
+    $: speed = overrideSpeed !== undefined ? overrideSpeed : $telemetryData.speed;
 
     // Normal speed range check. E.g. 0-120 is normal, 120-140 warning, >140 critical
     $: status = (speed > 140 ? 'critical' : speed > 120 ? 'warning' : 'normal') as 'critical' | 'warning' | 'normal';

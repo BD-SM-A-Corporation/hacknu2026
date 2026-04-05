@@ -1,4 +1,4 @@
-import { writable, get } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 
 export interface TelemetryData {
     locomotiveId: string;
@@ -24,6 +24,45 @@ export const telemetryData = writable<TelemetryData>({
 });
 
 export const allTelemetry = writable<Record<string, TelemetryData>>({});
+
+export const averageFleetTelemetry = derived(allTelemetry, ($all) => {
+    const keys = Object.keys($all);
+    const count = keys.length;
+    
+    if (count === 0) {
+        return {
+            locomotiveId: 'ALL',
+            speed: 0,
+            temperature: 0,
+            pressure: 0,
+            fuelLevel: 0,
+            healthScore: 100,
+            alerts: [],
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    let speed = 0, temp = 0, press = 0, fuel = 0, health = 0;
+    
+    keys.forEach(k => {
+        speed += Number($all[k].speed) || 0;
+        temp += Number($all[k].temperature) || 0;
+        press += Number($all[k].pressure) || 0;
+        fuel += Number($all[k].fuelLevel) || 0;
+        health += Number($all[k].healthScore) || 0;
+    });
+
+    return {
+        locomotiveId: 'ALL',
+        speed: speed / count,
+        temperature: temp / count,
+        pressure: press / count,
+        fuelLevel: fuel / count,
+        healthScore: Math.round(health / count),
+        alerts: [],
+        timestamp: new Date().toISOString()
+    };
+});
 
 export const activeLocomotiveId = writable<string | null>(
     typeof window !== 'undefined'
