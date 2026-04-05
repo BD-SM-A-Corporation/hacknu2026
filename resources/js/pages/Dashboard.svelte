@@ -20,6 +20,7 @@
     import TemperatureWidget from '@/components/telemetry/TemperatureWidget.svelte';
     import PressureWidget from '@/components/telemetry/PressureWidget.svelte';
     import FuelWidget from '@/components/telemetry/FuelWidget.svelte';
+    import HealthWidget from '@/components/telemetry/HealthWidget.svelte';
     import LocomotiveMap from '@/components/telemetry/LocomotiveMap.svelte';
 
     // UI Modals
@@ -102,8 +103,9 @@
 
 <!-- Telemetry Dashboard Grid -->
 {#if $activeLocomotiveId}
-    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         <!-- Main stats -->
+        <HealthWidget />
         <SpeedWidget />
         <TemperatureWidget />
         <PressureWidget />

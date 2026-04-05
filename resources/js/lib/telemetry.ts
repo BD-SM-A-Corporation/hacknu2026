@@ -6,6 +6,7 @@ export interface TelemetryData {
     temperature: number; // Celsius
     pressure: number; // atm or kPa
     fuelLevel: number; // percentage (0-100)
+    healthScore: number; // 0-100 score
     timestamp: string; // ISO string
 }
 
@@ -16,6 +17,7 @@ export const telemetryData = writable<TelemetryData>({
     temperature: 0,
     pressure: 0,
     fuelLevel: 0,
+    healthScore: 100,
     timestamp: new Date().toISOString(),
 });
 
