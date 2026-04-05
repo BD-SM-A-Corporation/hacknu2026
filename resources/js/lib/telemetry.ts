@@ -7,6 +7,7 @@ export interface TelemetryData {
     pressure: number; // atm or kPa
     fuelLevel: number; // percentage (0-100)
     healthScore: number; // 0-100 score
+    alerts: string[]; // List of real-time anomaly alerts
     timestamp: string; // ISO string
 }
 
@@ -18,8 +19,11 @@ export const telemetryData = writable<TelemetryData>({
     pressure: 0,
     fuelLevel: 0,
     healthScore: 100,
+    alerts: [],
     timestamp: new Date().toISOString(),
 });
+
+export const allTelemetry = writable<Record<string, TelemetryData>>({});
 
 export const activeLocomotiveId = writable<string | null>(
     typeof window !== 'undefined'
@@ -37,12 +41,28 @@ if (typeof window !== 'undefined') {
 
 // Functions to update the telemetry safely
 export function updateTelemetry(data: Partial<TelemetryData>) {
-    if (data.locomotiveId && data.locomotiveId !== get(activeLocomotiveId)) {
-        // Skip updates for non-active locomotives if we are only focusing on one,
-        // or we could maintain a dictionary of { [id]: data }. For now, we update the active one.
+    const id = data.locomotiveId;
+    if (!id) return;
+
+    allTelemetry.update((map) => {
+        const current = map[id] || {
+            locomotiveId: id,
+            speed: 0,
+            temperature: 0,
+            pressure: 0,
+            fuelLevel: 0,
+            healthScore: 100,
+            alerts: [],
+            timestamp: new Date().toISOString(),
+        };
+        map[id] = { ...current, ...data, timestamp: new Date().toISOString() };
+        return map;
+    });
+
+    if (id !== get(activeLocomotiveId)) {
+        // Skip updates for the main focused widget if it's not the active one
         if (get(activeLocomotiveId) === null) {
-            // First time receiving data or no active selected
-            activeLocomotiveId.set(data.locomotiveId);
+            activeLocomotiveId.set(id);
         } else {
             return;
         }

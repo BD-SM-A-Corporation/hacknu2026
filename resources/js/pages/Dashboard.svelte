@@ -29,7 +29,11 @@
     import WebSocketConfigModal from '@/components/telemetry/WebSocketConfigModal.svelte';
 
     // Stores
-    import { activeLocomotiveId } from '@/lib/telemetry';
+    import {
+        activeLocomotiveId,
+        telemetryData,
+        allTelemetry,
+    } from '@/lib/telemetry';
     import {
         openLocomotiveSelector,
         openWebSocketConfig,
@@ -37,12 +41,52 @@
     import { isRealtime, formattedRange } from '@/lib/dateRangeStore';
     import { wsClient } from '@/lib/websocketClient';
 
+    let now = Date.now();
+    let combinedAlerts: string[] = [];
+
     onMount(() => {
         wsClient.connect();
+
+        const interval = setInterval(() => {
+            now = Date.now();
+        }, 2000);
+        return () => clearInterval(interval);
     });
+
+    $: {
+        const activeAlerts: string[] = [];
+
+        Object.values($allTelemetry).forEach(loco => {
+            if (!loco.locomotiveId) return;
+
+            const locoTime = new Date(loco.timestamp).getTime();
+            const isDropped = $isRealtime && (now - locoTime > 10000);
+
+            if (isDropped) {
+                activeAlerts.push(`ОБРЫВ СВЯЗИ (${loco.locomotiveId})`);
+            }
+            if (loco.alerts && loco.alerts.length > 0) {
+                loco.alerts.forEach(a => activeAlerts.push(`${a} (${loco.locomotiveId})`));
+            }
+        });
+
+        combinedAlerts = activeAlerts;
+    }
 </script>
 
-<AppHead title="Dashboard - Телеметрия" />
+<AppHead title="Дэшборд - Телеметрия" />
+
+<!-- Global Alerts -->
+{#if combinedAlerts.length > 0}
+    <div class="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+        {#each combinedAlerts as alert}
+            <div class="bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg border border-red-500 font-semibold flex items-center gap-3 animate-in slide-in-from-right-10 pointer-events-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                {alert}
+            </div>
+        {/each}
+    </div>
+{/if}
 
 <!-- Locomotive Status Bar -->
 <div

@@ -4,27 +4,30 @@ import (
 	"log"
 	"math"
 	"sync"
+	"time"
 )
 
 // WorkerPool manages incoming raw telemetry bytes, processes them concurrently,
 // and outputs clean LocomotiveStates to a specific channel.
 type WorkerPool struct {
-	incoming    chan []byte
-	outgoing    chan *LocomotiveState
-	transformer DataTransformer
-	numWorkers  int
-	wg          sync.WaitGroup
-	prevStates  map[string]*LocomotiveState
-	mu          sync.RWMutex
+	incoming       chan []byte
+	outgoing       chan *LocomotiveState
+	transformer    DataTransformer
+	numWorkers     int
+	wg             sync.WaitGroup
+	prevStates     map[string]*LocomotiveState
+	lastHealthTime map[string]time.Time
+	mu             sync.RWMutex
 }
 
 func NewWorkerPool(workers int, transformer DataTransformer) *WorkerPool {
 	return &WorkerPool{
-		incoming:    make(chan []byte, 10000), // Buffer for high-load bursts
-		outgoing:    make(chan *LocomotiveState, 10000),
-		transformer: transformer,
-		numWorkers:  workers,
-		prevStates:  make(map[string]*LocomotiveState),
+		incoming:       make(chan []byte, 10000), // Buffer for high-load bursts
+		outgoing:       make(chan *LocomotiveState, 10000),
+		transformer:    transformer,
+		numWorkers:     workers,
+		prevStates:     make(map[string]*LocomotiveState),
+		lastHealthTime: make(map[string]time.Time),
 	}
 }
 
@@ -64,7 +67,8 @@ func (wp *WorkerPool) worker(id int) {
 		}
 
 		wp.mu.Lock()
-		if prevState, exists := wp.prevStates[state.LocomotiveID]; exists {
+		prevState, exists := wp.prevStates[state.LocomotiveID]
+		if exists {
 			timeDiff := state.Timestamp.Sub(prevState.Timestamp).Seconds()
 			if timeDiff > 0 {
 				// 1. Detect GPS Jumps (Bug)
@@ -74,26 +78,39 @@ func (wp *WorkerPool) worker(id int) {
 					log.Printf("[Worker %d] GPS Jump Detected for %s: %.2f km in %.2fs", id, state.LocomotiveID, dist, timeDiff)
 					state.GpsCorrupted = true
 					state.IsAnomaly = true
+					state.Alerts = append(state.Alerts, "Аномальный скачок GPS")
 				}
 
 				// 2. Speed change > 40 km/h per second
 				if (math.Abs(state.Speed-prevState.Speed) / timeDiff) > 40.0 {
 					state.IsAnomaly = true
+					state.Alerts = append(state.Alerts, "Критический скачок скорости")
 				}
 
 				// 3. Fuel jump/drop > 5% means likely anomaly
-				if math.Abs(state.FuelLevel-prevState.FuelLevel) > 5.0 {
+				if (prevState.FuelLevel - state.FuelLevel) > 5.0 {
 					state.IsAnomaly = true
+					state.Alerts = append(state.Alerts, "Подозрительная утечка топлива")
+				} else if (state.FuelLevel - prevState.FuelLevel) > 5.0 {
+					state.IsAnomaly = true
+					state.Alerts = append(state.Alerts, "Аномальный скачок уровня топлива")
 				}
 			}
 		}
-		// Save for next comparison (only if GPS is NOT corrupted, otherwise we'd compare against a bad point next)
+		// 4. Calculate Health Score (0-100) with 5-minute debouncing
+		lastTime := wp.lastHealthTime[state.LocomotiveID]
+		if !exists || time.Since(lastTime) >= 5*time.Minute {
+			state.HealthScore = calculateHealth(state)
+			wp.lastHealthTime[state.LocomotiveID] = time.Now()
+		} else {
+			state.HealthScore = prevState.HealthScore
+		}
+
+		// Save for next comparison (only if GPS is NOT corrupted)
 		if !state.GpsCorrupted {
 			wp.prevStates[state.LocomotiveID] = state
 		}
 		wp.mu.Unlock()
-
-		state.HealthScore = calculateHealth(state)
 
 		wp.outgoing <- state
 	}
