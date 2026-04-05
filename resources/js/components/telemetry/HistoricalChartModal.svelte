@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
     import { activeLocomotiveId } from '@/lib/telemetry';
     import { Chart, registerables } from 'chart.js';
 
@@ -42,13 +41,11 @@
             let periodSecs = (endDate!.getTime() - startDate!.getTime()) / 1000;
 
             if (stepSelection === 'auto') {
-                // Auto: try to get roughly ~60 points
                 if (periodSecs > 60) {
                     const calculatedStep = Math.round(periodSecs / 60);
                     stepParam = `&step=${calculatedStep}`;
                 }
             } else if (stepSelection !== '1s') {
-                // E.g. "5s" => 5, "1m" => 60
                 const num = parseInt(stepSelection);
                 const unit = stepSelection.slice(-1);
                 let multiplier = 1;
@@ -65,7 +62,6 @@
                 const data = await res.json();
                 hasData = data.length > 0;
                 currentData = data;
-                // Add a small delay for DOM to render the canvas if it was hidden
                 setTimeout(() => {
                     renderChart(data);
                 }, 50);
@@ -115,9 +111,8 @@
         if (chart) chart.destroy();
         if (!hasData) return;
 
-        // Отключаем фронтенд-прореживание, так как сервер уже агрегировал данные
         let periodSecs = (endDate!.getTime() - startDate!.getTime()) / 1000;
-        const showDate = periodSecs >= 86400; // Если период больше 1 дня, то показываем также и дату
+        const showDate = periodSecs >= 86400;
 
         const labels = data.map((d) => {
             const dt = new Date(d.timestamp);
@@ -132,7 +127,6 @@
             return dt.toLocaleTimeString([], { hour12: false });
         });
 
-        // Убеждаемся, что парсим в Number т.к. AVG() в postgres возвращает строки для float/decimal типов
         const speed = data.map((d) => Number(d.speed));
         const temp = data.map((d) => Number(d.temperature));
         const press = data.map((d) => Number(d.pressure));
@@ -189,7 +183,7 @@
                 interaction: { mode: 'index', intersect: false },
                 scales: {
                     x: {
-                        ticks: { maxTicksLimit: 15 }, // Не перегружаем ось X текстом
+                        ticks: { maxTicksLimit: 15 },
                     },
                     y: {
                         type: 'linear',
@@ -205,7 +199,7 @@
                         display: showTemperature,
                         position: 'right',
                         title: { display: true, text: 'Температура (°C)' },
-                        grid: { drawOnChartArea: false }, // Оставляем сетку только для главной оси
+                        grid: { drawOnChartArea: false },
                     },
                     yPress: {
                         type: 'linear',
@@ -221,7 +215,7 @@
                     id: 'custom_canvas_background_color',
                     beforeDraw: (chartInstance) => {
                         const ctx = chartInstance.canvas.getContext('2d');
-                        if (!ctx) return; // Fix TS lint
+                        if (!ctx) return;
                         ctx.save();
                         ctx.globalCompositeOperation = 'destination-over';
                         const isDark =
@@ -241,7 +235,6 @@
     }
 
     $effect(() => {
-        // Читаем переменные состояния ДО условия, чтобы Svelte гарантированно отслеживал их изменения!
         const speed = showSpeed;
         const temp = showTemperature;
         const press = showPressure;
@@ -253,7 +246,6 @@
             chart.data.datasets[2].hidden = !press;
             chart.data.datasets[3].hidden = !fuel;
 
-            // Динамически скрываем оси, если метрика отключена
             if (chart.options?.scales?.yTemp) {
                 chart.options.scales.yTemp.display = temp;
             }
@@ -425,26 +417,63 @@
                 {/if}
 
                 {#if !loading && hasData}
-                    <div class="absolute top-6 right-6 z-10 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm flex flex-col gap-1.5 text-sm min-w-[140px]">
-                        <span class="text-xs uppercase text-zinc-500 font-medium tracking-wider mb-1 px-1">Метрики</span>
-                        
-                        <label class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showSpeed ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}">
-                            <input type="checkbox" bind:checked={showSpeed} class="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:bg-zinc-800 dark:border-zinc-600" />
+                    <div
+                        class="absolute top-6 right-6 z-10 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm flex flex-col gap-1.5 text-sm min-w-[140px]"
+                    >
+                        <span
+                            class="text-xs uppercase text-zinc-500 font-medium tracking-wider mb-1 px-1"
+                            >Метрики</span
+                        >
+
+                        <label
+                            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showSpeed
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+                        >
+                            <input
+                                type="checkbox"
+                                bind:checked={showSpeed}
+                                class="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:bg-zinc-800 dark:border-zinc-600"
+                            />
                             <span class="font-medium">Скорость</span>
                         </label>
-                        
-                        <label class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showTemperature ? 'bg-red-500/15 text-red-700 dark:bg-red-500/25 dark:text-red-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}">
-                            <input type="checkbox" bind:checked={showTemperature} class="rounded border-zinc-300 text-red-600 focus:ring-red-500 dark:bg-zinc-800 dark:border-zinc-600" />
+
+                        <label
+                            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showTemperature
+                                ? 'bg-red-500/15 text-red-700 dark:bg-red-500/25 dark:text-red-300'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+                        >
+                            <input
+                                type="checkbox"
+                                bind:checked={showTemperature}
+                                class="rounded border-zinc-300 text-red-600 focus:ring-red-500 dark:bg-zinc-800 dark:border-zinc-600"
+                            />
                             <span class="font-medium">Температура</span>
                         </label>
-                        
-                        <label class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showPressure ? 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/25 dark:text-blue-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}">
-                            <input type="checkbox" bind:checked={showPressure} class="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-600" />
+
+                        <label
+                            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showPressure
+                                ? 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/25 dark:text-blue-300'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+                        >
+                            <input
+                                type="checkbox"
+                                bind:checked={showPressure}
+                                class="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-600"
+                            />
                             <span class="font-medium">Давление</span>
                         </label>
-                        
-                        <label class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showFuel ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}">
-                            <input type="checkbox" bind:checked={showFuel} class="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:bg-zinc-800 dark:border-zinc-600" />
+
+                        <label
+                            class="flex items-center gap-2.5 cursor-pointer transition-colors px-2 py-1.5 rounded-md {showFuel
+                                ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/50'}"
+                        >
+                            <input
+                                type="checkbox"
+                                bind:checked={showFuel}
+                                class="rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:bg-zinc-800 dark:border-zinc-600"
+                            />
                             <span class="font-medium">Топливо</span>
                         </label>
                     </div>
