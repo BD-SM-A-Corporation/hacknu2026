@@ -1,5 +1,7 @@
 # Locomotive Telemetry System
 
+📚 **Полная онлайн документация доступна здесь:** [https://bd-sm-a-corporation.github.io/ktzh_docs/](https://bd-sm-a-corporation.github.io/ktzh_docs/)
+
 Единая система управления телеметрией локомотивов, состоящая из:
 
 - **Svelte 5 + Inertia v3 Dashboard** (SPA)
