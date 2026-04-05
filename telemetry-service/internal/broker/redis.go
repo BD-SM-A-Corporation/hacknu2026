@@ -18,8 +18,8 @@ type RedisBroker struct {
 func NewRedisBroker(addr string, password string, db int) *RedisBroker {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
-		Password: password, // no password set
-		DB:       db,       // use default DB
+		Password: password,
+		DB:       db,
 	})
 
 	// Ping to test connection
@@ -37,12 +37,10 @@ func (rb *RedisBroker) UpdateHeartbeat(ctx context.Context, locomotiveID string)
 	return rb.client.Set(ctx, key, time.Now().Unix(), 60*time.Second).Err()
 }
 
-// Publish broadcasts the LocomotiveState to the specified Redis channel.
 func (rb *RedisBroker) Publish(ctx context.Context, channel string, state *processor.LocomotiveState) error {
 	payload, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
-	// The Laravel app can subscribe to this channel using `Illuminate\Support\Facades\Redis`
 	return rb.client.Publish(ctx, channel, payload).Err()
 }

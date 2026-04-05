@@ -18,7 +18,6 @@ type WorkerPool struct {
 	mu          sync.RWMutex
 }
 
-// NewWorkerPool initializes the pool.
 func NewWorkerPool(workers int, transformer DataTransformer) *WorkerPool {
 	return &WorkerPool{
 		incoming:    make(chan []byte, 10000), // Buffer for high-load bursts
@@ -29,7 +28,6 @@ func NewWorkerPool(workers int, transformer DataTransformer) *WorkerPool {
 	}
 }
 
-// Start launches the goroutines for data processing.
 func (wp *WorkerPool) Start() {
 	for i := 0; i < wp.numWorkers; i++ {
 		wp.wg.Add(1)
@@ -37,7 +35,6 @@ func (wp *WorkerPool) Start() {
 	}
 }
 
-// computeDistance calculates the approximate distance between two points in kilometers.
 func computeDistance(lat1, lng1, lat2, lng2 float64) float64 {
 	const R = 6371 // Earth radius in km
 	dLat := (lat2 - lat1) * math.Pi / 180
@@ -61,7 +58,6 @@ func (wp *WorkerPool) worker(id int) {
 			continue
 		}
 
-		// Basic boundary validation
 		state.GpsCorrupted = false
 		if state.Lat < 40.0 || state.Lat > 56.0 || state.Lng < 46.0 || state.Lng > 88.0 {
 			state.GpsCorrupted = true
@@ -97,7 +93,6 @@ func (wp *WorkerPool) worker(id int) {
 		}
 		wp.mu.Unlock()
 
-		// Calculate Health Score (0-100)
 		state.HealthScore = calculateHealth(state)
 
 		wp.outgoing <- state
