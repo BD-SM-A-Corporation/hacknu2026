@@ -19,15 +19,15 @@
 
     const sidebarNavItems: NavItem[] = [
         {
-            title: 'Profile',
+            title: 'Профиль',
             href: editProfile(),
         },
         {
-            title: 'Security',
+            title: 'Безопасность',
             href: editSecurity(),
         },
         {
-            title: 'Appearance',
+            title: 'Внешний вид',
             href: editAppearance(),
         },
     ];
@@ -37,8 +37,8 @@
 
 <div class="px-4 py-6">
     <Heading
-        title="Settings"
-        description="Manage your profile and account settings"
+        title="Настройки"
+        description="Управляйте профилем и настройками вашего аккаунта"
     />
 
     <div class="flex flex-col lg:flex-row lg:space-x-12">

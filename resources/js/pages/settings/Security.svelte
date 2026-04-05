@@ -4,7 +4,7 @@
     export const layout = {
         breadcrumbs: [
             {
-                title: 'Security settings',
+                title: 'Настройки безопасности',
                 href: edit(),
             },
         ],
@@ -43,15 +43,15 @@
     onDestroy(() => twoFactorAuth.clearTwoFactorAuthData());
 </script>
 
-<AppHead title="Security settings" />
+<AppHead title="Настройки безопасности" />
 
-<h1 class="sr-only">Security settings</h1>
+<h1 class="sr-only">Настройки безопасности</h1>
 
 <div class="space-y-6">
     <Heading
         variant="small"
-        title="Update password"
-        description="Ensure your account is using a long, random password to stay secure"
+        title="Обновление пароля"
+        description="Убедитесь, что ваш аккаунт использует длинный и сложный пароль для безопасности"
     />
 
     <Form
@@ -63,37 +63,37 @@
     >
         {#snippet children({ errors, processing, recentlySuccessful })}
             <div class="grid gap-2">
-                <Label for="current_password">Current password</Label>
+                <Label for="current_password">Текущий пароль</Label>
                 <PasswordInput
                     id="current_password"
                     name="current_password"
                     class="mt-1 block w-full"
                     autocomplete="current-password"
-                    placeholder="Current password"
+                    placeholder="Текущий пароль"
                 />
                 <InputError message={errors.current_password} />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password">New password</Label>
+                <Label for="password">Новый пароль</Label>
                 <PasswordInput
                     id="password"
                     name="password"
                     class="mt-1 block w-full"
                     autocomplete="new-password"
-                    placeholder="New password"
+                    placeholder="Новый пароль"
                 />
                 <InputError message={errors.password} />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
+                <Label for="password_confirmation">Подтвердите пароль</Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
                     class="mt-1 block w-full"
                     autocomplete="new-password"
-                    placeholder="Confirm password"
+                    placeholder="Подтвердите пароль"
                 />
                 <InputError message={errors.password_confirmation} />
             </div>
@@ -104,11 +104,11 @@
                     disabled={processing}
                     data-test="update-password-button"
                 >
-                    Save password
+                    Сохранить пароль
                 </Button>
 
                 {#if recentlySuccessful}
-                    <p class="text-sm text-neutral-600">Saved.</p>
+                    <p class="text-sm text-neutral-600">Сохранено.</p>
                 {/if}
             </div>
         {/snippet}
@@ -119,22 +119,20 @@
     <div class="space-y-6">
         <Heading
             variant="small"
-            title="Two-factor authentication"
-            description="Manage your two-factor authentication settings"
+            title="Двухфакторная аутентификация"
+            description="Управление настройками двухфакторной аутентификации"
         />
 
         {#if !twoFactorEnabled}
             <div class="flex flex-col items-start justify-start space-y-4">
                 <p class="text-muted-foreground text-sm">
-                    When you enable two-factor authentication, you will be
-                    prompted for a secure pin during login. This pin can be
-                    retrieved from a TOTP-supported application on your phone.
+                    Когда вы включите двухфакторную аутентификацию, во время входа у вас будет запрашиваться пин-код безопасности. Этот код можно получить в приложении-аутентификаторе (TOTP) на вашем мобильном телефоне.
                 </p>
 
                 <div>
                     {#if twoFactorAuth.hasSetupData()}
                         <Button onclick={() => (showSetupModal = true)}>
-                            <ShieldCheck class="size-4" />Continue setup
+                            <ShieldCheck class="size-4" />Продолжить настройку
                         </Button>
                     {:else}
                         <Form
@@ -143,7 +141,7 @@
                         >
                             {#snippet children({ processing })}
                                 <Button type="submit" disabled={processing}>
-                                    Enable 2FA
+                                    Включить 2FA
                                 </Button>
                             {/snippet}
                         </Form>
@@ -153,9 +151,7 @@
         {:else}
             <div class="flex flex-col items-start justify-start space-y-4">
                 <p class="text-muted-foreground text-sm">
-                    You will be prompted for a secure, random pin during login,
-                    which you can retrieve from the TOTP-supported application
-                    on your phone.
+                    При входе в систему вы будете вводить случайный пин-код безопасности, который сможете получить в приложении-аутентификаторе (TOTP) на вашем телефоне.
                 </p>
 
                 <div class="relative inline">
@@ -166,7 +162,7 @@
                                 type="submit"
                                 disabled={processing}
                             >
-                                Disable 2FA
+                                Отключить 2FA
                             </Button>
                         {/snippet}
                     </Form>

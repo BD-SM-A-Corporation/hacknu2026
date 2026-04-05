@@ -4,7 +4,7 @@
     export const layout = {
         breadcrumbs: [
             {
-                title: 'Profile settings',
+                title: 'Настройки профиля',
                 href: edit(),
             },
         ],
@@ -35,15 +35,15 @@
     const user = $derived(page.props.auth.user);
 </script>
 
-<AppHead title="Profile settings" />
+<AppHead title="Настройки профиля" />
 
-<h1 class="sr-only">Profile settings</h1>
+<h1 class="sr-only">Настройки профиля</h1>
 
 <div class="flex flex-col space-y-6">
     <Heading
         variant="small"
-        title="Profile information"
-        description="Update your name and email address"
+        title="Информация профиля"
+        description="Обновите ваше имя и адрес электронной почты"
     />
 
     <Form
@@ -53,7 +53,7 @@
     >
         {#snippet children({ errors, processing, recentlySuccessful })}
             <div class="grid gap-2">
-                <Label for="name">Name</Label>
+                <Label for="name">Имя</Label>
                 <Input
                     id="name"
                     name="name"
@@ -61,13 +61,13 @@
                     value={user.name}
                     required
                     autocomplete="name"
-                    placeholder="Full name"
+                    placeholder="Имя"
                 />
                 <InputError class="mt-2" message={errors.name} />
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
+                <Label for="email">Электронная почта</Label>
                 <Input
                     id="email"
                     type="email"
@@ -76,7 +76,7 @@
                     value={user.email}
                     required
                     autocomplete="username"
-                    placeholder="Email address"
+                    placeholder="Ваш email"
                 />
                 <InputError class="mt-2" message={errors.email} />
             </div>
@@ -84,16 +84,15 @@
             {#if mustVerifyEmail && !user.email_verified_at}
                 <div>
                     <p class="-mt-4 text-sm text-muted-foreground">
-                        Your email address is unverified.
+                        Ваш адрес электронной почты не подтвержден.
                         <TextLink href={send()} as="button">
-                            Click here to resend the verification email.
+                            Нажмите здесь, чтобы отправить письмо с подтверждением еще раз.
                         </TextLink>
                     </p>
 
                     {#if status === 'verification-link-sent'}
                         <div class="mt-2 text-sm font-medium text-green-600">
-                            A new verification link has been sent to your email
-                            address.
+                            Новая ссылка была отправлена на ваш адрес электронной почты.
                         </div>
                     {/if}
                 </div>
@@ -103,11 +102,11 @@
                 <Button
                     type="submit"
                     disabled={processing}
-                    data-test="update-profile-button">Save</Button
+                    data-test="update-profile-button">Сохранить</Button
                 >
 
                 {#if recentlySuccessful}
-                    <p class="text-sm text-neutral-600">Saved.</p>
+                    <p class="text-sm text-neutral-600">Сохранено.</p>
                 {/if}
             </div>
         {/snippet}
