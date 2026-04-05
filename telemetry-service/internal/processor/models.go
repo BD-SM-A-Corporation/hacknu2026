@@ -30,6 +30,7 @@ type LocomotiveState struct {
 	HealthScore  int       `json:"health_score"`
 	GpsCorrupted bool      `json:"gps_corrupted"`
 	IsAnomaly    bool      `json:"is_anomaly"`
+	Alerts       []string  `json:"alerts"`
 	Timestamp    time.Time `json:"timestamp"`
 }
 
@@ -57,6 +58,7 @@ func (t *DefaultTransformer) Transform(raw []byte) (*LocomotiveState, error) {
 		Lat:          rt.Lat,
 		Lng:          rt.Lng,
 		HealthScore:  rt.HealthScore, // If provided, else we calculate in worker
+		Alerts:       []string{},     // Empty array by default
 		Timestamp:    time.Now(),
 	}, nil
 }

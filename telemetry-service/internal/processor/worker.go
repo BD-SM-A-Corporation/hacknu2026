@@ -78,16 +78,22 @@ func (wp *WorkerPool) worker(id int) {
 					log.Printf("[Worker %d] GPS Jump Detected for %s: %.2f km in %.2fs", id, state.LocomotiveID, dist, timeDiff)
 					state.GpsCorrupted = true
 					state.IsAnomaly = true
+					state.Alerts = append(state.Alerts, "Аномальный скачок GPS")
 				}
 
 				// 2. Speed change > 40 km/h per second
 				if (math.Abs(state.Speed-prevState.Speed) / timeDiff) > 40.0 {
 					state.IsAnomaly = true
+					state.Alerts = append(state.Alerts, "Критический скачок скорости")
 				}
 
 				// 3. Fuel jump/drop > 5% means likely anomaly
-				if math.Abs(state.FuelLevel-prevState.FuelLevel) > 5.0 {
+				if (prevState.FuelLevel - state.FuelLevel) > 5.0 {
 					state.IsAnomaly = true
+					state.Alerts = append(state.Alerts, "Подозрительная утечка топлива")
+				} else if (state.FuelLevel - prevState.FuelLevel) > 5.0 {
+					state.IsAnomaly = true
+					state.Alerts = append(state.Alerts, "Аномальный скачок уровня топлива")
 				}
 			}
 		}
