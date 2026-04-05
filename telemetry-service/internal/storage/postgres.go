@@ -20,6 +20,7 @@ type TelemetryHistory struct {
 	Lat          float64
 	Lng          float64
 	IsAnomaly    bool
+	HealthScore  int
 	Timestamp    time.Time `gorm:"index:idx_loco_time;index:idx_timestamp"`
 }
 
@@ -83,6 +84,7 @@ func (ps *PostgresStorage) InsertSync(state *processor.LocomotiveState) error {
 		Lat:          state.Lat,
 		Lng:          state.Lng,
 		IsAnomaly:    state.IsAnomaly,
+		HealthScore:  state.HealthScore,
 		Timestamp:    state.Timestamp,
 	}
 
