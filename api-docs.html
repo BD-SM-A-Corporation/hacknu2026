@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locomotive Telemetry API Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .endpoint-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .endpoint-header {
+            background-color: #f9fafb;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .method-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            text-transform: uppercase;
+        }
+        .method-get { background-color: #10b981; }
+        .method-post { background-color: #3b82f6; }
+        .method-put { background-color: #f59e0b; }
+        .method-patch { background-color: #f59e0b; }
+        .method-delete { background-color: #ef4444; }
+        .endpoint-path {
+            font-family: monospace;
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #111827;
+        }
+        .endpoint-body {
+            padding: 1.5rem;
+        }
+        .tag {
+            display: inline-block;
+            background-color: #e0e7ff;
+            color: #4f46e5;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        pre {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <h1 class="text-xl font-bold text-gray-900">API Documentation</h1>
+            <p class="text-sm text-gray-500 mt-1">Locomotive Fleet Telemetry v1.0</p>
+        </div>
+        <nav class="flex-1 p-4 space-y-1 text-sm">
+            <div class="pt-4 pb-2">
+                <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Authentication</p>
+                <a href="#auth" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">Auth & Sanctum</a>
+            </div>
+            <div class="pt-2 pb-2">
+                <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">User</p>
+                <a href="#get-user" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">GET /api/user</a>
+            </div>
+            <div class="pt-2 pb-2">
+                <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Locomotives</p>
+                <a href="#get-locomotives" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">GET /api/locomotives</a>
+                <a href="#post-locomotives" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">POST /api/locomotives</a>
+                <a href="#get-locomotive-id" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">GET /api/locomotives/{id}</a>
+                <a href="#put-locomotive-id" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">PUT /api/locomotives/{id}</a>
+                <a href="#delete-locomotive-id" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">DELETE /api/locomotives/{id}</a>
+                <a href="#get-locomotive-stats" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">GET /api/locomotives/{id}/stats</a>
+            </div>
+            <div class="pt-2 pb-2">
+                <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Map</p>
+                <a href="#get-map-positions" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">GET /api/map/positions</a>
+            </div>
+            <div class="pt-2 pb-2">
+                <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Telemetry Analytics</p>
+                <a href="#get-telemetry-analytics" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">GET /api/telemetry/analytics</a>
+                <a href="#get-telemetry-analytics-all" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">GET /api/telemetry/analytics/all</a>
+                <a href="#get-telemetry-anomalies" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">GET /api/telemetry/anomalies</a>
+            </div>
+            <div class="pt-2 pb-2">
+                <p class="px-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Websocket Endpoints</p>
+                <a href="#endpoints-resource" class="block px-2 py-1.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md">Endpoints REST API</a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto w-full h-full p-8 bg-white" style="scrollbar-gutter: stable">
+        <div class="max-w-4xl mx-auto">
+            
+            <div class="mb-12" id="auth">
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-4">Introduction & Authentication</h2>
+                <p class="text-gray-600 mb-4">
+                    Welcome to the API Documentation for the Locomotive Fleet Telemetry Dashboard. This API allows fetching real-time and historical locomotive data, including metrics, positions, warnings, and websocket routing details.
+                </p>
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                    <p class="text-sm text-yellow-700">
+                        <strong>Authentication Required:</strong> All API endpoints are protected by Laravel Sanctum (`auth:sanctum`). You must include a valid Bearer token or use cookie-based session authentication for SPA requests.
+                    </p>
+                </div>
+            </div>
+
+            <hr class="my-10 border-gray-200" />
+            
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">User Endpoints</h3>
+            
+            <div class="endpoint-card" id="get-user">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/user</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Returns the currently authenticated user details.</p>
+                    <h4 class="font-semibold text-gray-900 mb-2">Responses</h4>
+                    <pre><code>200 OK
+{
+  "id": 1,
+  "name": "Operator",
+  "email": "operator@locomotive.example.com",
+  "created_at": "...",
+  "updated_at": "..."
+}</code></pre>
+                </div>
+            </div>
+
+            <hr class="my-10 border-gray-200" />
+
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">Locomotives</h3>
+
+            <div class="endpoint-card" id="get-locomotives">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/locomotives</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Retrieves a list of all locomotives in the fleet.</p>
+                </div>
+            </div>
+
+            <div class="endpoint-card" id="post-locomotives">
+                <div class="endpoint-header">
+                    <span class="method-badge method-post">POST</span>
+                    <span class="endpoint-path">/api/locomotives</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Creates a new locomotive record in the database.</p>
+                    <h4 class="font-semibold text-gray-900 mb-2">Request Body</h4>
+                    <ul class="list-disc pl-5 mb-4 text-gray-600 text-sm">
+                        <li><code>id</code> (string, required): Unique identifier for the locomotive.</li>
+                        <li><code>model</code> (string, required): Model/Series. Max 255 chars.</li>
+                        <li><code>depot</code> (string, optional): Assigned depot. Max 255 chars.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="endpoint-card" id="get-locomotive-id">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/locomotives/{id}</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Retrieves the details of a specific locomotive by its ID.</p>
+                </div>
+            </div>
+
+            <div class="endpoint-card" id="put-locomotive-id">
+                <div class="endpoint-header">
+                    <span class="method-badge method-put">PUT/PATCH</span>
+                    <span class="endpoint-path">/api/locomotives/{id}</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Updates an existing locomotive record.</p>
+                    <h4 class="font-semibold text-gray-900 mb-2">Request Body</h4>
+                    <ul class="list-disc pl-5 mb-4 text-gray-600 text-sm">
+                        <li><code>model</code> (string, optional)</li>
+                        <li><code>depot</code> (string, optional)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="endpoint-card" id="delete-locomotive-id">
+                <div class="endpoint-header">
+                    <span class="method-badge method-delete">DELETE</span>
+                    <span class="endpoint-path">/api/locomotives/{id}</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Deletes a locomotive. Returns <code>204 No Content</code> on success.</p>
+                </div>
+            </div>
+
+            <div class="endpoint-card" id="get-locomotive-stats">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/locomotives/{id}/stats</span>
+                </div>
+                <div class="endpoint-body">
+                    <span class="tag">Telemetry</span>
+                    <p class="text-gray-600 mb-4">Fetches the top 500 most recent telemetry historical records for the specified locomotive, ordered chronologically descending.</p>
+                    <h4 class="font-semibold text-gray-900 mb-2">Responses</h4>
+                    <pre><code>200 OK
+[
+  {
+    "id": 105,
+    "locomotive_id": "LOC-001",
+    "timestamp": "2026-04-05T08:00:00Z",
+    "speed": 85.2,
+    "temperature": 90.5,
+    "pressure": 110.2,
+    "fuel_level": 75.0,
+    "health_score": 98,
+    "is_anomaly": false
+  },
+  ...
+]</code></pre>
+                </div>
+            </div>
+
+            <hr class="my-10 border-gray-200" />
+
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">Map & Positions</h3>
+
+            <div class="endpoint-card" id="get-map-positions">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/map/positions</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Returns real-time locations and basic statuses of all locomotives for map rendering.</p>
+                    <h4 class="font-semibold text-gray-900 mb-2">Responses</h4>
+                    <pre><code>200 OK
+[
+  {
+    "id": "LOC-001",
+    "series": "Series A",
+    "lat": 48.8566,
+    "lng": 2.3522,
+    "speed": 105,
+    "status": "In Transit"
+  }
+]</code></pre>
+                </div>
+            </div>
+
+            <hr class="my-10 border-gray-200" />
+
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">Telemetry Analytics</h3>
+
+            <div class="endpoint-card" id="get-telemetry-analytics">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/telemetry/analytics</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Fetches aggregated or raw telemetry data for a specific locomotive across a given time window.</p>
+                    <h4 class="font-semibold text-gray-900 mb-2">Query Parameters</h4>
+                    <ul class="list-disc pl-5 mb-4 text-gray-600 text-sm">
+                        <li><code>locomotive_id</code> (string, required)</li>
+                        <li><code>start_date</code> (date, required)</li>
+                        <li><code>end_date</code> (date, required, after start_date)</li>
+                        <li><code>step</code> (integer, optional) - If provided, records are grouped directly via date_bin using the step size in seconds.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="endpoint-card" id="get-telemetry-analytics-all">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/telemetry/analytics/all</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Calculates fleet-wide averages for speed, temperature, pressure, and fuel level across the provided time window.</p>
+                    <h4 class="font-semibold text-gray-900 mb-2">Query Parameters</h4>
+                    <ul class="list-disc pl-5 mb-4 text-gray-600 text-sm">
+                        <li><code>start_date</code> (date, required)</li>
+                        <li><code>end_date</code> (date, required, after start_date)</li>
+                        <li><code>step</code> (integer, optional) - Data grouping interval in seconds. Defaults to 300 (5 minutes).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="endpoint-card" id="get-telemetry-anomalies">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/telemetry/anomalies</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Retrieves the historical list of acknowledged and recent telemetry anomalies detected across the fleet.</p>
+                    <h4 class="font-semibold text-gray-900 mb-2">Query Parameters</h4>
+                    <ul class="list-disc pl-5 mb-4 text-gray-600 text-sm">
+                        <li><code>limit</code> (integer, optional) - Max objects to return. Default 50.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="my-10 border-gray-200" />
+            
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">Websocket Endpoints</h3>
+
+            <div class="endpoint-card" id="endpoints-resource">
+                <div class="endpoint-header">
+                    <span class="method-badge" style="background-color: #6366f1;">REST</span>
+                    <span class="endpoint-path">/api/endpoints</span>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-gray-600 mb-4">Standard CRUD resource for managing Websocket Endpoints mapped for data ingestion, connection handlers or real-time broadcast receivers.</p>
+                    <ul class="list-disc pl-5 mb-4 text-gray-600 text-sm space-y-1">
+                        <li><strong>GET /api/endpoints</strong> - List all endpoints</li>
+                        <li><strong>POST /api/endpoints</strong> - Store new endpoint (parameters: <code>url</code>, <code>is_active</code>, <code>description</code>)</li>
+                        <li><strong>GET /api/endpoints/{id}</strong> - Read details of specific endpoint configuration</li>
+                        <li><strong>PUT/PATCH /api/endpoints/{id}</strong> - Update an existing endpoint</li>
+                        <li><strong>DELETE /api/endpoints/{id}</strong> - Delete endpoint</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+</body>
+</html>
