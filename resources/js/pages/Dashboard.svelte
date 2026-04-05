@@ -42,7 +42,7 @@
     });
 </script>
 
-<AppHead title="Dashboard - Телеметрия" />
+<AppHead title="Дэшборд - Телеметрия" />
 
 <!-- Locomotive Status Bar -->
 <div
