@@ -134,14 +134,16 @@
                                     <Folder class="h-5 w-5" />
                                     <span>Репозиторий</span>
                                 </a>
-                                <Link
-                                    href="/docs"
+                                <a
+                                    href="https://bd-sm-a-corporation.github.io/ktzh_docs/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     onclick={() => mobileMenuOpen = false}
                                     class="flex items-center space-x-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                                 >
                                     <BookOpen class="h-5 w-5" />
                                     <span>Документация</span>
-                                </Link>
+                                </a>
                             </div>
                         </div>
                     </SheetContent>
@@ -261,8 +263,10 @@
                     <Tooltip>
                         <TooltipTrigger>
                             {#snippet child({ props })}
-                                <Link
-                                    href="/docs"
+                                <a
+                                    href="https://bd-sm-a-corporation.github.io/ktzh_docs/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     {...props}
                                     class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 group"
                                 >
@@ -270,7 +274,7 @@
                                     <BookOpen
                                         class="size-[18px] text-zinc-500 group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-200 transition-colors"
                                     />
-                                </Link>
+                                </a>
                             {/snippet}
                         </TooltipTrigger>
                         <TooltipContent>
