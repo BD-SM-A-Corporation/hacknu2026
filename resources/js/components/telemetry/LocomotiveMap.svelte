@@ -27,13 +27,21 @@
     function toggleFullscreen() {
         isFullscreen.update(v => !v);
         setTimeout(() => {
-            if (map) map.invalidateSize();
+            if (map) {
+                map.invalidateSize();
+            }
         }, 300); // 300ms accounts for transition delay
     }
 
     function getStatusColor(status: string) {
-        if (status === 'warning' || status === 'Critical' || status === 'anomaly') return '#ef4444'; // Red
-        if (status === 'stopped' || status === 'Offline' || status === 'depot') return '#71717a'; // Gray
+        if (status === 'warning' || status === 'Critical' || status === 'anomaly') {
+            return '#ef4444'; // Red
+        }
+
+        if (status === 'stopped' || status === 'Offline' || status === 'depot') {
+            return '#71717a'; // Gray
+        }
+
         return '#10b981'; // Green
     }
 

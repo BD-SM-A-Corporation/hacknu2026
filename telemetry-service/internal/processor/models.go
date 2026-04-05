@@ -15,6 +15,7 @@ type RawTelemetry struct {
 	FuelPerc     float64 `json:"fuel_perc"`
 	Lat          float64 `json:"lat"`
 	Lng          float64 `json:"lng"`
+	HealthScore  int     `json:"health_score,omitempty"`
 }
 
 // LocomotiveState is the validated and unified structure for the frontend and DB.
@@ -26,6 +27,7 @@ type LocomotiveState struct {
 	FuelLevel    float64   `json:"fuelLevel"`
 	Lat          float64   `json:"lat"`
 	Lng          float64   `json:"lng"`
+	HealthScore  int       `json:"health_score"`
 	GpsCorrupted bool      `json:"gps_corrupted"`
 	IsAnomaly    bool      `json:"is_anomaly"`
 	Timestamp    time.Time `json:"timestamp"`
@@ -54,6 +56,7 @@ func (t *DefaultTransformer) Transform(raw []byte) (*LocomotiveState, error) {
 		FuelLevel:    rt.FuelPerc,
 		Lat:          rt.Lat,
 		Lng:          rt.Lng,
+		HealthScore:  rt.HealthScore, // If provided, else we calculate in worker
 		Timestamp:    time.Now(),
 	}, nil
 }

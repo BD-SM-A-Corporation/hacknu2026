@@ -55,34 +55,7 @@ func main() {
 func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	dialer := websocket.DefaultDialer
-	var conn *websocket.Conn
-	var err error
-
-	for i := 0; i < 20; i++ {
-		conn, _, err = dialer.Dial(url, nil)
-		if err == nil {
-			break
-		}
-		log.Printf("[%s] Подключение... (%d/20)", id, i+1)
-		time.Sleep(3 * time.Second)
-	}
-
-	if err != nil {
-		log.Printf("[%s] Ошибка: %v", id, err)
-		return
-	}
-	defer conn.Close()
-
-	go func() {
-		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
-				return
-			}
-		}
-	}()
-
-	// Состояние
+	// Initial State
 	currentFuel := 85.0
 	if series == "KZ8A" {
 		currentFuel = 0
@@ -98,55 +71,87 @@ func simulateLoco(url, id, series string, wg *sync.WaitGroup) {
 	fmt.Printf(">>> Запущен %s (%s)\n", id, series)
 
 	for {
-		chance := rand.Float64()
-		isSilent := false
+		dialer := websocket.DefaultDialer
+		conn, _, err := dialer.Dial(url, nil)
+		if err != nil {
+			log.Printf("[%s] Ошибка подключения: %v. Повтор через 5с...", id, err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
 
-		// 1. Сначала генерируем базу
-		data := generateBaseData(id, series, &currentFuel, &lat, &lng)
+		log.Printf("[%s] Соединение установлено", id)
 
-		// 2. Накладываем аномалии ПОВЕРХ базы и ОБЯЗАТЕЛЬНО обновляем указатели состояния
-		if chance < 0.05 {
-			anomalyType := rand.Intn(5)
-			switch anomalyType {
-			case 0:
-				fmt.Printf("⚠️ [%s] ОБРЫВ СВЯЗИ\n", id)
-				isSilent = true
-			case 1:
-				fmt.Printf("⚠️ [%s] СКАЧОК СКОРОСТИ\n", id)
-				data.Speed = 185.5
-				data.Status = "Critical"
-			case 2:
-				fmt.Printf("⚠️ [%s] ПЕРЕГРЕВ\n", id)
-				data.EngineTemp = 115.0
-				data.Status = "Warning"
-			case 3:
-				if series == "TE33A" {
-					fmt.Printf("⚠️ [%s] СЛИВ ТОПЛИВА (-15%%)\n", id)
-					currentFuel -= 15.0 // Обновляем состояние!
-					if currentFuel < 0 {
-						currentFuel = 0
-					}
-					data.FuelLevel = currentFuel
-					data.Status = "Critical"
+		// Message reader to handle close events
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			for {
+				if _, _, err := conn.ReadMessage(); err != nil {
+					log.Printf("[%s] Ошибка чтения (соединение разорвано): %v", id, err)
+					return
 				}
-			case 4:
-				fmt.Printf("⚠️ [%s] GPS JUMP\n", id)
-				lat += 0.5 // Обновляем состояние!
-				data.Lat = lat
-				data.Status = "Critical"
+			}
+		}()
+
+		// Simulation Loop
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				chance := rand.Float64()
+				isSilent := false
+
+				data := generateBaseData(id, series, &currentFuel, &lat, &lng)
+
+				if chance < 0.05 {
+					anomalyType := rand.Intn(5)
+					switch anomalyType {
+					case 0:
+						fmt.Printf("⚠️ [%s] ОБРЫВ СВЯЗИ\n", id)
+						isSilent = true
+					case 1:
+						fmt.Printf("⚠️ [%s] СКАЧОК СКОРОСТИ\n", id)
+						data.Speed = 185.5
+						data.Status = "Critical"
+					case 2:
+						fmt.Printf("⚠️ [%s] ПЕРЕГРЕВ\n", id)
+						data.EngineTemp = 115.0
+						data.Status = "Warning"
+					case 3:
+						if series == "TE33A" {
+							fmt.Printf("⚠️ [%s] СЛИВ ТОПЛИВА (-15%%)\n", id)
+							currentFuel -= 15.0
+							if currentFuel < 0 {
+								currentFuel = 0
+							}
+							data.FuelLevel = currentFuel
+							data.Status = "Critical"
+						}
+					case 4:
+						fmt.Printf("⚠️ [%s] GPS JUMP\n", id)
+						lat += 0.5
+						data.Lat = lat
+						data.Status = "Critical"
+					}
+				}
+
+				if !isSilent {
+					payload, _ := json.Marshal(data)
+					if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+						log.Printf("[%s] Ошибка записи: %v", id, err)
+						conn.Close()
+						break loop
+					}
+				} else {
+					time.Sleep(15 * time.Second)
+				}
+
+				time.Sleep(1 * time.Second)
 			}
 		}
-
-		if !isSilent {
-			payload, _ := json.Marshal(data)
-			if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
-				return
-			}
-		} else {
-			time.Sleep(15 * time.Second)
-		}
-
-		time.Sleep(1 * time.Second)
+		conn.Close()
 	}
 }
 

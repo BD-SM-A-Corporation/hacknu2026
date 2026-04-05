@@ -88,6 +88,7 @@
         });
 
         const id = get(activeLocomotiveId);
+
         if (id) {
             // 1. Try to load from localStorage first
             const cached = localStorage.getItem(`telemetry_chart_${id}`);
@@ -169,10 +170,16 @@
         }
 
         unsubscribe = telemetryData.subscribe((data) => {
-            if (!data.locomotiveId || (data.locomotiveId !== id && id !== ''))
+            if (!data.locomotiveId || (data.locomotiveId !== id && id !== '')) {
                 return; // Ensure we stick to the initial ID for this modal instance
+            }
 
             const timeString = new Date(data.timestamp).toLocaleTimeString();
+
+            // Check if last added was same timestamp (avoid duplicates from fast pings)
+            if (labels.length > 0 && labels[labels.length - 1] === timeString) {
+                return;
+            }
 
             labels.push(timeString);
             speedData.push(data.speed);
@@ -208,8 +215,13 @@
     });
 
     onDestroy(() => {
-        if (unsubscribe) unsubscribe();
-        if (chart) chart.destroy();
+        if (unsubscribe) {
+            unsubscribe();
+        }
+
+        if (chart) {
+            chart.destroy();
+        }
     });
 
     // Reactively update chart visibility when toggles change

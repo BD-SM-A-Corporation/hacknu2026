@@ -97,8 +97,59 @@ func (wp *WorkerPool) worker(id int) {
 		}
 		wp.mu.Unlock()
 
+		// Calculate Health Score (0-100)
+		state.HealthScore = calculateHealth(state)
+
 		wp.outgoing <- state
 	}
+}
+
+func calculateHealth(state *LocomotiveState) int {
+	score := 100
+
+	// 1. Anomalies (Critical penalty)
+	if state.IsAnomaly {
+		score -= 40
+	}
+
+	// 2. Temperature penalties
+	if state.Temperature > 110 {
+		score -= 40
+	} else if state.Temperature > 95 {
+		score -= 20
+	} else if state.Temperature > 85 {
+		score -= 10
+	}
+
+	// 3. Pressure penalties (Standard is 5.0-5.4)
+	if state.Pressure < 4.5 || state.Pressure > indexLimit(state.Pressure) { // Just simpler logic
+		score -= 15
+	}
+	// Let's stick to simple logic
+	if state.Pressure < 4.8 || state.Pressure > 5.6 {
+		score -= 10
+	}
+
+	// 4. Fuel penalties
+	if state.FuelLevel < 5.0 {
+		score -= 25
+	} else if state.FuelLevel < 15.0 {
+		score -= 10
+	}
+
+	// 5. GPS penalties
+	if state.GpsCorrupted {
+		score -= 5
+	}
+
+	if score < 0 {
+		return 0
+	}
+	return score
+}
+
+func indexLimit(p float64) float64 {
+	return 5.6
 }
 
 // Submit enqueues data for processing.
